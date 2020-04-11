@@ -31,6 +31,8 @@ void set_defaults(settings_t *set)
 template<>
 struct enumerators<enum_t> : enum_list
 {
+	enumerators() : enum_list(this) {}
+
 	INTROSPECT_ENUM(VALUE0);
 	INTROSPECT_ENUM(VALUE1);
 };

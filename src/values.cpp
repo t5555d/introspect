@@ -35,7 +35,7 @@ void base_enum::parse(std::istream& str, int32_t *value)
 		str >> id;
 		for (auto& pair : enums()) {
 			if (id == pair.name) {
-				*value = pair.value;
+				*value = static_cast<int32_t>(pair.value);
 				return;
 			}
 		}

@@ -3,7 +3,6 @@
 #include "fwd.h"
 #include <iostream>
 #include <type_traits>
-#include "inline_list.h"
 
 INTROSPECT_NS_OPEN;
 
@@ -58,26 +57,51 @@ struct mirror : typed_mirror<T, base_mirror>
 
 // support enumerations
 
-using enum_list = inline_list<enumerator>;
-
-struct enumerator : enum_list::node
+struct enumerator
 {
 	const char * const name;
 	const int64_t value;
 
 	template<typename T>
-	enumerator(const char *name, T value, enum_list& list):
-		enum_list::node(list), name(name), value(value) {}
+	enumerator(const char *name, T value):
+		name(name), value(value) {}
+};
+
+struct enum_list
+{
+	size_t size() const {
+		return size_t(first.value);
+	}
+
+	const enumerator *begin() const {
+		return &first + 1;
+	}
+
+	const enumerator *end() const {
+		return begin() + size();
+	}
+	
+protected:
+
+	template<typename Child>
+	enum_list(Child *self):
+		first(nullptr, (sizeof(Child) - sizeof(enum_list)) / sizeof(enumerator))
+	{
+	}
+
+	const enumerator first;
 };
 
 template<typename T>
 struct enumerators : enum_list
 {
 	// specialize this template for your enum
-	// and define enum_value's
+	// and define enumerator's inside
+
+	enumerators() : enum_list(this) {}
 };
 
-#define INTROSPECT_ENUM(name) enumerator name##__enum__value__ { #name, name, *this }
+#define INTROSPECT_ENUM(name) enumerator __enum__value__##name { #name, name }
 
 struct base_enum : base_mirror
 {
