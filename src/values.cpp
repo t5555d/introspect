@@ -28,6 +28,35 @@ void base_array::print(std::ostream& str) const
 	str << " }";
 }
 
+void base_enum::parse(std::istream& str, int32_t *value)
+{
+	if (isalpha(str.peek())) {
+		std::string id;
+		str >> id;
+		for (auto& pair : enums()) {
+			if (id == pair.name) {
+				*value = pair.value;
+				return;
+			}
+		}
+		str.setf(std::ios::failbit);
+	}
+	else {
+		str >> *value;
+	}
+}
+
+void base_enum::print(std::ostream& str, const int32_t *value) const
+{
+	for (auto& pair : enums()) {
+		if (*value == pair.value) {
+			str << pair.name;
+			return;
+		}
+	}
+	str << *value;
+}
+
 base_field& base_struct::at(const char *name)
 {
 	for (auto& field : *this) {

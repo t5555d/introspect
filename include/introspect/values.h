@@ -3,6 +3,7 @@
 #include "fwd.h"
 #include <iostream>
 #include <type_traits>
+#include "inline_list.h"
 
 INTROSPECT_NS_OPEN;
 
@@ -57,20 +58,58 @@ struct mirror : typed_mirror<T, base_mirror>
 
 // support enumerations
 
-struct base_enum : base_mirror
+using enum_list = inline_list<enumerator>;
+
+struct enumerator : enum_list::node
 {
+	const char * const name;
+	const int64_t value;
+
+	template<typename T>
+	enumerator(const char *name, T value, enum_list& list):
+		enum_list::node(list), name(name), value(value) {}
 };
 
 template<typename T>
-struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: typed_mirror<T, base_enum>
+struct enumerators : enum_list
 {
-	explicit mirror(T& raw) :
+	// specialize this template for your enum
+	// and define enum_value's
+};
+
+#define INTROSPECT_ENUM(name) enumerator name##__enum__value__ { #name, name, *this }
+
+struct base_enum : base_mirror
+{
+	virtual const enum_list& enums() const = 0;
+
+protected:
+	void parse(std::istream& str, int32_t *raw_value);
+	void print(std::ostream& str, const int32_t *raw_value) const;
+};
+
+template<typename T>
+struct enum_mirror : typed_mirror<T, base_enum>
+{
+	explicit enum_mirror(T& raw) :
 		typed_mirror(raw) {}
 
 	using E = typename std::underlying_type<T>::type;
 
-	void parse(std::istream& str) override { str >> *reinterpret_cast<E *>(raw); }
-	void print(std::ostream& str) const override { str << *raw; }
+	void parse(std::istream& str) override { base_enum::parse(str, reinterpret_cast<E *>(raw)); }
+	void print(std::ostream& str) const override { base_enum::print(str, reinterpret_cast<E *>(raw)); }
+
+	const enum_list& enums() const override {
+		static enumerators<T> values;
+		return values;
+	}
+};
+
+template<typename T>
+struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: enum_mirror<T>
+{
+	explicit mirror(T& raw) :
+		enum_mirror(raw) {}
 };
 
 

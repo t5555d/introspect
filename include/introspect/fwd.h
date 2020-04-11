@@ -18,4 +18,6 @@ struct base_array;
 struct base_field;
 struct base_struct;
 
+struct enumerator;
+
 INTROSPECT_NS_CLOSE;

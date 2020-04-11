@@ -56,6 +56,6 @@ struct struct_mirror : typed_mirror<Struct, base_struct>
 	};
 };
 
-#define INTROSPECT(name) typename struct_mirror::template field<decltype(raw->name)> name { #name, *raw, raw->name, *this }
+#define INTROSPECT(name) field<decltype(raw->name)> name { #name, *raw, raw->name, *this }
 
 INTROSPECT_NS_CLOSE;

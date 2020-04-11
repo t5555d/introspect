@@ -29,6 +29,13 @@ void set_defaults(settings_t *set)
 }
 
 template<>
+struct enumerators<enum_t> : enum_list
+{
+	INTROSPECT_ENUM(VALUE0);
+	INTROSPECT_ENUM(VALUE1);
+};
+
+template<>
 struct mirror<settings_t> : struct_mirror<settings_t>
 {
 	explicit mirror(settings_t& set) :
