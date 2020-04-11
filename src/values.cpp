@@ -33,7 +33,7 @@ void base_enum::parse(std::istream& str, int32_t *value)
 	if (isalpha(str.peek())) {
 		std::string id;
 		str >> id;
-		for (auto& pair : enums()) {
+		for (auto& pair : values()) {
 			if (id == pair.name) {
 				*value = static_cast<int32_t>(pair.value);
 				return;
@@ -48,7 +48,7 @@ void base_enum::parse(std::istream& str, int32_t *value)
 
 void base_enum::print(std::ostream& str, const int32_t *value) const
 {
-	for (auto& pair : enums()) {
+	for (auto& pair : values()) {
 		if (*value == pair.value) {
 			str << pair.name;
 			return;

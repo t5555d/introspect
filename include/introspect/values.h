@@ -57,55 +57,55 @@ struct mirror : typed_mirror<T, base_mirror>
 
 // support enumerations
 
-struct enumerator
+struct enum_value
 {
 	const char * const name;
 	const int64_t value;
 
 	template<typename T>
-	enumerator(const char *name, T value):
+	enum_value(const char *name, T value):
 		name(name), value(value) {}
 };
 
-struct enum_list
+struct base_enum_values
 {
 	size_t size() const {
 		return size_t(first.value);
 	}
 
-	const enumerator *begin() const {
+	const enum_value *begin() const {
 		return &first + 1;
 	}
 
-	const enumerator *end() const {
+	const enum_value *end() const {
 		return begin() + size();
 	}
 	
 protected:
 
 	template<typename Child>
-	enum_list(Child *self):
-		first(nullptr, (sizeof(Child) - sizeof(enum_list)) / sizeof(enumerator))
+	base_enum_values(Child *self):
+		first(nullptr, (sizeof(Child) - sizeof(base_enum_values)) / sizeof(enum_value))
 	{
 	}
 
-	const enumerator first;
+	const enum_value first;
 };
 
 template<typename T>
-struct enumerators : enum_list
+struct enum_values : base_enum_values
 {
 	// specialize this template for your enum
-	// and define enumerator's inside
+	// and define enum_value's inside
 
-	enumerators() : enum_list(this) {}
+	enum_values() : base_enum_values(this) {}
 };
 
-#define INTROSPECT_ENUM(name) enumerator __enum__value__##name { #name, name }
+#define ENUM_VALUE(name) enum_value __enum__value__##name { #name, name }
 
 struct base_enum : base_mirror
 {
-	virtual const enum_list& enums() const = 0;
+	virtual const base_enum_values& values() const = 0;
 
 protected:
 	void parse(std::istream& str, int32_t *raw_value);
@@ -123,9 +123,9 @@ struct enum_mirror : typed_mirror<T, base_enum>
 	void parse(std::istream& str) override { base_enum::parse(str, reinterpret_cast<E *>(raw)); }
 	void print(std::ostream& str) const override { base_enum::print(str, reinterpret_cast<E *>(raw)); }
 
-	const enum_list& enums() const override {
-		static enumerators<T> values;
-		return values;
+	const base_enum_values& values() const override {
+		static enum_values<T> x;
+		return x;
 	}
 };
 

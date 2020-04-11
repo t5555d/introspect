@@ -29,12 +29,12 @@ void set_defaults(settings_t *set)
 }
 
 template<>
-struct enumerators<enum_t> : enum_list
+struct enum_values<enum_t> : base_enum_values
 {
-	enumerators() : enum_list(this) {}
+	enum_values() : base_enum_values(this) {}
 
-	INTROSPECT_ENUM(VALUE0);
-	INTROSPECT_ENUM(VALUE1);
+	ENUM_VALUE(VALUE0);
+	ENUM_VALUE(VALUE1);
 };
 
 template<>
