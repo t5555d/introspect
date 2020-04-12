@@ -28,34 +28,38 @@ void base_array::print(std::ostream& str) const
 	str << " }";
 }
 
-void base_enum::parse(std::istream& str, int32_t *value)
+void base_enum::parse(std::istream& str)
 {
-	if (isalpha(str.peek())) {
+    if (isalpha(str.peek())) {
 		std::string id;
 		str >> id;
 		for (auto& pair : values()) {
 			if (id == pair.name) {
-				*value = static_cast<int32_t>(pair.value);
-				return;
+                return int_value(pair.value);
 			}
 		}
-		str.setf(std::ios::failbit);
+        throw parse_error(std::string("unknown enum value: ") + id);
 	}
 	else {
-		str >> *value;
-	}
+        int64_t value;
+        str >> value;
+        return int_value(value);
+    }
 }
 
-void base_enum::print(std::ostream& str, const int32_t *value) const
+void base_enum::print(std::ostream& str) const
 {
+    auto value = int_value();
 	for (auto& pair : values()) {
-		if (*value == pair.value) {
+		if (pair.value == value) {
 			str << pair.name;
 			return;
 		}
 	}
-	str << *value;
+	str << value;
 }
+
+
 
 base_field& base_fields::at(const char *name)
 {

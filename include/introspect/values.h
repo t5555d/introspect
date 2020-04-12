@@ -30,6 +30,14 @@ inline std::ostream& operator << (std::ostream& str, const base_mirror& value)
 	return value.print(str), str;
 }
 
+struct parse_error : std::runtime_error
+{
+    parse_error(const char *message) :
+        std::runtime_error(message) {}
+    parse_error(const std::string& message) :
+        std::runtime_error(message) {}
+};
+
 template<typename T, typename Base>
 struct typed_mirror : Base
 {
@@ -81,9 +89,12 @@ struct base_enum : base_mirror
 {
 	virtual array_ptr<const enum_value> values() const = 0;
 
-protected:
-	void parse(std::istream& str, int32_t *raw_value);
-	void print(std::ostream& str, const int32_t *raw_value) const;
+    virtual int64_t int_value() const = 0;
+    virtual void int_value(int64_t value) = 0;
+
+    void parse(std::istream& str) override;
+    void print(std::ostream& str) const override;
+
 };
 
 template<typename T>
@@ -95,8 +106,8 @@ struct enum_mirror : typed_mirror<T, base_enum>
 
 	using E = typename std::underlying_type<T>::type;
 
-	void parse(std::istream& str) override { base_enum::parse(str, reinterpret_cast<E *>(raw)); }
-	void print(std::ostream& str) const override { base_enum::print(str, reinterpret_cast<E *>(raw)); }
+    int64_t int_value() const override { return *raw; }
+    void int_value(int64_t value) override { *raw = static_cast<T>(value); }
 
 	array_ptr<const enum_value> values() const override {
 		static enum_values<T> x;

@@ -84,8 +84,6 @@ struct base_fields
 		bool operator==(const basic_iterator& that) const { return fields == that.fields && pfield == that.pfield; }
 		bool operator!=(const basic_iterator& that) const { return !(*this == that); }
 
-		//basic_iterator(const basic_iterator& node) = default;
-
 	private:
 		friend struct base_fields;
 
