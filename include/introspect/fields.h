@@ -135,8 +135,11 @@ struct real_fields : base_fields
 		}
 	};
 
-	void set_value(Struct *value) {
-
+	void set_fields(Struct& value) {
+        auto base = reinterpret_cast<uint8_t *>(&value);
+        for (auto& field : *this) {
+            field.value.addr(base + field.offset);
+        }
 	}
 
 protected:
@@ -159,7 +162,10 @@ struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::typ
 {
 	mirror() = default;
 	mirror(const mirror& that) = default;
-	explicit mirror(Struct& raw) : typed_mirror(raw) {}
+	explicit mirror(Struct& raw) : typed_mirror(raw)
+    {
+        set_fields(raw);
+    }
 
 	base_fields& fields() override { return *this; }
 };

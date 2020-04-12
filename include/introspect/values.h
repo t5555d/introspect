@@ -14,6 +14,7 @@ struct base_mirror
 	virtual size_t size() const = 0;
 	virtual void *addr() = 0;
 	const void *addr() const { return const_cast<base_mirror *>(this)->addr(); }
+    virtual void addr(void *addr) = 0;
 
 	virtual void parse(std::istream& str) = 0;
 	virtual void print(std::ostream& str) const = 0;
@@ -38,6 +39,8 @@ struct typed_mirror : Base
 
 	size_t size() const override { return sizeof(T); }
 	void *addr() override { return raw; }
+    void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
+
 	T& get() { return *raw; }
 	const T& get() const { return *raw; }
 	void set(T& raw) { this->raw = &raw; }
@@ -149,6 +152,7 @@ public:
 
 	size_t size() const override { return value->size(); }
 	void * addr() override { return value->addr(); }
+    void addr(void *addr) override { value->addr(addr); }
 	void parse(std::istream& str) override { value->parse(str); }
 	void print(std::ostream& str) const override { value->print(str); }
 
@@ -191,6 +195,7 @@ struct typed_array : base_array
 	size_t count() const override { return len; }
 	size_t size() const override { return len * sizeof(T); }
 	void * addr() override { return raw; }
+    void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
 
 	variant operator[](size_t i) override { 
 		if (i >= len) {
