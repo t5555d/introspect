@@ -34,6 +34,7 @@ struct typed_mirror : Base
 {
 	typed_mirror() = default;
 	typed_mirror(const typed_mirror& that) = default;
+    explicit typed_mirror(T& raw) : raw(&raw) {}
 
 	size_t size() const override { return sizeof(T); }
 	void *addr() override { return raw; }
@@ -103,9 +104,9 @@ struct enum_mirror : typed_mirror<T, base_enum>
 template<typename T>
 struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: enum_mirror<T>
 {
-	enum_mirror() = default;
-	explicit mirror(T& raw) :
-		enum_mirror(raw) {}
+    mirror() = default;
+    mirror(const mirror& that) = default;
+	explicit mirror(T& raw) : enum_mirror(raw) {}
 };
 
 
