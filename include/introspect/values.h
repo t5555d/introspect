@@ -32,25 +32,25 @@ inline std::ostream& operator << (std::ostream& str, const base_mirror& value)
 template<typename T, typename Base>
 struct typed_mirror : Base
 {
-	explicit typed_mirror(T& raw) :
-		raw(&raw)
-	{
-	}
+	typed_mirror() = default;
+	typed_mirror(const typed_mirror& that) = default;
 
 	size_t size() const override { return sizeof(T); }
 	void *addr() override { return raw; }
 	T& get() { return *raw; }
 	const T& get() const { return *raw; }
+	void set(T& raw) { this->raw = &raw; }
 
 protected:
-	T *raw;
+	T *raw = nullptr;
 };
 
 template<typename T, typename Enable>
 struct mirror : typed_mirror<T, base_mirror>
 {
-	explicit mirror(T& raw) :
-		typed_mirror(raw) {}
+	mirror() = default;
+	mirror(const mirror& that) = default;
+	explicit mirror(T& raw) : typed_mirror(raw) {}
 
 	void parse(std::istream& str) override { str >> *raw; }
 	void print(std::ostream& str) const override { str << *raw; }
@@ -75,7 +75,7 @@ struct enum_values
 
 struct base_enum : base_mirror
 {
-	virtual const array_ptr<enum_value>& values() const = 0;
+	virtual array_ptr<const enum_value> values() const = 0;
 
 protected:
 	void parse(std::istream& str, int32_t *raw_value);
@@ -85,23 +85,25 @@ protected:
 template<typename T>
 struct enum_mirror : typed_mirror<T, base_enum>
 {
-	explicit enum_mirror(T& raw) :
-		typed_mirror(raw) {}
+	enum_mirror() = default;
+	enum_mirror(const enum_mirror& that) = default;
+	explicit enum_mirror(T& raw) : typed_mirror(raw) {}
 
 	using E = typename std::underlying_type<T>::type;
 
 	void parse(std::istream& str) override { base_enum::parse(str, reinterpret_cast<E *>(raw)); }
 	void print(std::ostream& str) const override { base_enum::print(str, reinterpret_cast<E *>(raw)); }
 
-	const array_ptr<enum_value>& values() const override {
-		static array_cast<enum_values<T>, enum_value> x;
-		return x;
+	array_ptr<const enum_value> values() const override {
+		static enum_values<T> x;
+		return array_cast<enum_value>(x);
 	}
 };
 
 template<typename T>
 struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: enum_mirror<T>
 {
+	enum_mirror() = default;
 	explicit mirror(T& raw) :
 		enum_mirror(raw) {}
 };
@@ -211,6 +213,8 @@ struct mirror<E[N]> : typed_array<E>
 
 	T& get() { return *reinterpret_cast<T *>(raw); }
 	const T& get() const { return *reinterpret_cast<T *>(raw); }
+
+	void set(T *value) { raw =  }
 };
 
 static_assert(sizeof(mirror<int>) <= VARIANT_BUFFER_SIZE, "VARIANT_BUFFER_SIZE is insufficient");

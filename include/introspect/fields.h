@@ -1,33 +1,43 @@
 #pragma once
 
-#include "inline_list.h"
 #include "values.h"
 
 INTROSPECT_NS_OPEN;
 
-struct base_struct : 
-	base_mirror,
-	inline_list<base_field>
+template<typename Struct, typename Fields>
+struct struct_fields : Fields
 {
-	base_field& at(const char *name);
-
-	const base_field& at(const char *name) const {
-		return const_cast<base_struct *>(this)->at(name);
-	}
-
-	base_field& operator[](const char *name) { return at(name); }
-	const base_field& operator[](const char *name) const { return at(name); }
-
-	void parse(std::istream& str) override;
-	void print(std::ostream& str) const override;
+	// specialize this template for your struct
+	// and define STRUCT_FIELD's inside
 };
 
-struct base_field : base_struct::node
-{
-	using node = base_struct::node;
+// interface of Fields::field
+#define STRUCT_FIELD(name) typename Fields::template field<decltype(raw->name)> name { #name, *raw, raw->name }
 
-	base_field(const char *name, size_t offset, base_mirror& value, base_struct& fields) :
-		base_struct::node(fields), name(name), offset(offset), value(value)
+struct meta_field {
+	ptrdiff_t offset;
+};
+
+template<typename Struct>
+struct meta_fields
+{
+protected:
+
+	static constexpr const Struct *raw = nullptr; // fake raw pointer
+
+	template<typename Field>
+	struct field : meta_field {
+		field(const char *name, const base_fields& s, const base_field& f) :
+			meta_field{ ptrdiff_t(&f) - ptrdiff_t(&s) }
+		{
+		}
+	};
+};
+
+struct base_field
+{
+	base_field(const char *name, size_t offset, base_mirror& value) :
+		name(name), offset(offset), value(value)
 	{
 	}
 	virtual ~base_field() {}
@@ -37,25 +47,121 @@ struct base_field : base_struct::node
 	base_mirror& value;
 };
 
-template<typename Struct>
-struct struct_mirror : typed_mirror<Struct, base_struct>
+struct base_fields
 {
-	explicit struct_mirror(Struct& raw) :
-		typed_mirror(raw) {}
+	base_field& at(const char *name);
 
-	template <typename T>
+	const base_field& at(const char *name) const {
+		return const_cast<base_fields *>(this)->at(name);
+	}
+
+	base_field& operator[](const char *name) { return at(name); }
+	const base_field& operator[](const char *name) const { return at(name); }
+
+	template<typename Fields, typename Field>
+	struct basic_iterator
+	{
+		typedef Field value_type;
+		typedef Field* pointer;
+		typedef Field& reference;
+
+		basic_iterator& operator++() {
+			pfield++;
+			return *this;
+		}
+
+		basic_iterator& operator--() {
+			pfield--;
+			return *this;
+		}
+
+		basic_iterator operator++(int) { return{ fields, pfield + 1 }; }
+		basic_iterator operator--(int) { return{ fields, pfield - 1 }; }
+
+		reference operator*() const { return *operator->(); }
+		pointer operator->() const { return reinterpret_cast<pointer>(ptrdiff_t(fields) + pfield->offset); }
+
+		bool operator==(const basic_iterator& that) const { return fields == that.fields && pfield == that.pfield; }
+		bool operator!=(const basic_iterator& that) const { return !(*this == that); }
+
+		//basic_iterator(const basic_iterator& node) = default;
+
+	private:
+		friend struct base_fields;
+
+		basic_iterator(Fields *fields, const meta_field *pfield) :
+			fields(fields), pfield(pfield) {}
+
+		Fields *fields;
+		const meta_field *pfield;
+	};
+
+	using iterator = basic_iterator<base_fields, base_field>;
+	using const_iterator = basic_iterator<const base_fields, const base_field>;
+
+	iterator begin() { return{ this, meta().begin() }; }
+	iterator end() { return{ this, meta().end() }; }
+	const_iterator begin() const { return{ this, meta().begin() }; }
+	const_iterator end() const { return{ this, meta().end() }; }
+
+protected:
+	virtual array_ptr<const meta_field> meta() const = 0;
+};
+
+struct base_struct : base_mirror
+{
+	virtual base_fields& fields() = 0;
+
+	const base_fields& fields() const {
+		return const_cast<base_struct *>(this)->fields();
+	}
+
+	void parse(std::istream& str) override;
+	void print(std::ostream& str) const override;
+};
+
+template<typename Struct>
+struct real_fields : base_fields
+{
+	template <typename E>
 	struct field : public base_field
 	{
-		typename mirror<T> value;
+		typename mirror<E> value;
 
-		field(const char *name, Struct& str, T& raw, base_struct& fields) :
-			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value, fields),
+		field(const char *name, Struct& str, E& raw) :
+			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value),
 			value(raw)
 		{
 		}
 	};
+
+	void set_value(Struct *value) {
+
+	}
+
+protected:
+
+	using child_fields = struct_fields<Struct, real_fields<Struct>>;
+
+	array_ptr<const meta_field> meta() const override {
+		// describe fields of our derivative:
+		static struct_fields<Struct, meta_fields<child_fields> > x;
+		return array_cast<const meta_field>(x);
+	}
+
+	Struct *raw = nullptr;
 };
 
-#define INTROSPECT(name) field<decltype(raw->name)> name { #name, *raw, raw->name, *this }
+template<typename Struct>
+struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::type> :
+	typed_mirror<Struct, base_struct>,
+	struct_fields<Struct, real_fields<Struct>>
+{
+	mirror() = default;
+	mirror(const mirror& that) = default;
+	explicit mirror(Struct& raw) : typed_mirror(raw) {}
+
+	base_fields& fields() override { return *this; }
+};
 
 INTROSPECT_NS_CLOSE;

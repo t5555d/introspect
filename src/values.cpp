@@ -57,7 +57,7 @@ void base_enum::print(std::ostream& str, const int32_t *value) const
 	str << *value;
 }
 
-base_field& base_struct::at(const char *name)
+base_field& base_fields::at(const char *name)
 {
 	for (auto& field : *this) {
 		if (0 == strcmp(field.name, name))
@@ -73,7 +73,7 @@ void base_struct::parse(std::istream& str)
 
 void base_struct::print(std::ostream& str) const
 {
-	for (auto& field : *this) {
+	for (auto& field : fields()) {
 		str << field.name << " = " << field.value << std::endl;
 	}
 }

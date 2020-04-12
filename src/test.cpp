@@ -29,24 +29,19 @@ void set_defaults(settings_t *set)
 }
 
 template<>
-struct enum_values<enum_t> : base_enum_values
+struct enum_values<enum_t>
 {
-	enum_values() : base_enum_values(this) {}
-
 	ENUM_VALUE(VALUE0);
 	ENUM_VALUE(VALUE1);
 };
 
-template<>
-struct mirror<settings_t> : struct_mirror<settings_t>
+template<typename Fields>
+struct struct_fields<settings_t, Fields> : Fields
 {
-	explicit mirror(settings_t& set) :
-		struct_mirror{ set } {}
-
-	INTROSPECT(a);
-	INTROSPECT(b);
-	INTROSPECT(c);
-	INTROSPECT(d);
+	STRUCT_FIELD(a);
+	STRUCT_FIELD(b);
+	STRUCT_FIELD(c);
+	STRUCT_FIELD(d);
 };
 
 // generic introspective settings
