@@ -3,6 +3,7 @@
 #include "fwd.h"
 #include <iostream>
 #include <type_traits>
+#include "utils.h"
 
 INTROSPECT_NS_OPEN;
 
@@ -59,53 +60,22 @@ struct mirror : typed_mirror<T, base_mirror>
 
 struct enum_value
 {
-	const char * const name;
-	const int64_t value;
-
-	template<typename T>
-	enum_value(const char *name, T value):
-		name(name), value(value) {}
-};
-
-struct base_enum_values
-{
-	size_t size() const {
-		return size_t(first.value);
-	}
-
-	const enum_value *begin() const {
-		return &first + 1;
-	}
-
-	const enum_value *end() const {
-		return begin() + size();
-	}
-	
-protected:
-
-	template<typename Child>
-	base_enum_values(Child *self):
-		first(nullptr, (sizeof(Child) - sizeof(base_enum_values)) / sizeof(enum_value))
-	{
-	}
-
-	const enum_value first;
+	const char * name;
+	int64_t value;
 };
 
 template<typename T>
-struct enum_values : base_enum_values
+struct enum_values
 {
 	// specialize this template for your enum
 	// and define enum_value's inside
-
-	enum_values() : base_enum_values(this) {}
 };
 
 #define ENUM_VALUE(name) enum_value __enum__value__##name { #name, name }
 
 struct base_enum : base_mirror
 {
-	virtual const base_enum_values& values() const = 0;
+	virtual const array_ptr<enum_value>& values() const = 0;
 
 protected:
 	void parse(std::istream& str, int32_t *raw_value);
@@ -123,8 +93,8 @@ struct enum_mirror : typed_mirror<T, base_enum>
 	void parse(std::istream& str) override { base_enum::parse(str, reinterpret_cast<E *>(raw)); }
 	void print(std::ostream& str) const override { base_enum::print(str, reinterpret_cast<E *>(raw)); }
 
-	const base_enum_values& values() const override {
-		static enum_values<T> x;
+	const array_ptr<enum_value>& values() const override {
+		static array_cast<enum_values<T>, enum_value> x;
 		return x;
 	}
 };

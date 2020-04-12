@@ -16,6 +16,7 @@ struct base_enum;
 struct base_array;
 
 struct base_field;
+struct base_fields;
 struct base_struct;
 
 struct enum_value;
