@@ -43,7 +43,7 @@ struct typed_mirror : Base
 
 	T& get() { return *raw; }
 	const T& get() const { return *raw; }
-	void set(T& raw) { this->raw = &raw; }
+	void set(T& raw) { addr(&raw); }
 
 protected:
 	T *raw = nullptr;
@@ -220,7 +220,7 @@ struct mirror<E[N]> : typed_array<E>
 	T& get() { return *reinterpret_cast<T *>(raw); }
 	const T& get() const { return *reinterpret_cast<T *>(raw); }
 
-	void set(T *value) { raw =  }
+	void set(T& value) { raw = &value[0]; }
 };
 
 static_assert(sizeof(mirror<int>) <= VARIANT_BUFFER_SIZE, "VARIANT_BUFFER_SIZE is insufficient");

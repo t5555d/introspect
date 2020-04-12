@@ -117,7 +117,9 @@ struct base_struct : base_mirror
 	}
 
 	void parse(std::istream& str) override;
-	void print(std::ostream& str) const override;
+    void print(std::ostream& str) const override { print(str, ""); }
+
+    void print(std::ostream& str, const char *prefix) const;
 };
 
 template<typename Struct>
@@ -168,6 +170,11 @@ struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::typ
     }
 
 	base_fields& fields() override { return *this; }
+
+    void addr(void *addr) override {
+        typed_mirror::addr(addr);
+        set_fields(get());
+    }
 };
 
 INTROSPECT_NS_CLOSE;

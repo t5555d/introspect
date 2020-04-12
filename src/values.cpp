@@ -71,10 +71,18 @@ void base_struct::parse(std::istream& str)
 	throw std::runtime_error("not implemented");
 }
 
-void base_struct::print(std::ostream& str) const
+void base_struct::print(std::ostream& str, const char *prefix) const
 {
 	for (auto& field : fields()) {
-		str << field.name << " = " << field.value << std::endl;
+        auto pstruct = dynamic_cast<base_struct *>(&field.value);
+        if (pstruct) {
+            char full_name[256];
+            snprintf(full_name, sizeof(full_name), "%s%s.", prefix, field.name);
+            pstruct->print(str, full_name);
+        }
+        else {
+            str << prefix << field.name << " = " << field.value << std::endl;
+        }
 	}
 }
 

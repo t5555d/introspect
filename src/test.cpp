@@ -15,12 +15,20 @@ enum enum_t
 	VALUE1,
 };
 
+struct point_t
+{
+    int32_t x;
+    int32_t y;
+    int32_t z;
+};
+
 struct settings_t
 {
 	int32_t a;
 	int64_t b;
 	enum_t  c;
 	int32_t d[3];
+    point_t e;
 };
 
 void set_defaults(settings_t *set)
@@ -36,12 +44,21 @@ struct enum_values<enum_t>
 };
 
 template<typename Fields>
+struct struct_fields<point_t, Fields> : Fields
+{
+    STRUCT_FIELD(x);
+    STRUCT_FIELD(y);
+    STRUCT_FIELD(z);
+};
+
+template<typename Fields>
 struct struct_fields<settings_t, Fields> : Fields
 {
 	STRUCT_FIELD(a);
 	STRUCT_FIELD(b);
 	STRUCT_FIELD(c);
 	STRUCT_FIELD(d);
+    STRUCT_FIELD(e);
 };
 
 // generic introspective settings
@@ -60,6 +77,9 @@ int main()
 	settings.d[0] = 20;
 	settings.d[1] = 25;
 	settings.d[2] = 30;
+    settings.e.x = 35;
+    settings.e.y = 40;
+    settings.e.z = 45;
 
 	settings_c set(settings);
 
@@ -73,6 +93,9 @@ int main()
 		<< ", " << set.d.value.get()[1]
 		<< ", " << set.d.value.get()[2]
 		<< " }" << std::endl;
+    std::cout << set.e.name << ".x = " << set.e.value.get().x << std::endl;
+    std::cout << set.e.name << ".y = " << set.e.value.get().y << std::endl;
+    std::cout << set.e.name << ".z = " << set.e.value.get().z << std::endl;
 
 	std::cout << "Accessing mirrors: " << std::endl;
 	std::cout << set.a.name << " = " << set.a.value << std::endl;
@@ -84,6 +107,10 @@ int main()
 		<< ", " << set.d.value[1]
 		<< ", " << set.d.value[2]
 		<< " }" << std::endl;
+
+    std::cout << set.e.name << "." << set.e.value.x.name << " = " << set.e.value.x.value << std::endl;
+    std::cout << set.e.name << "." << set.e.value.y.name << " = " << set.e.value.y.value << std::endl;
+    std::cout << set.e.name << "." << set.e.value.z.name << " = " << set.e.value.z.value << std::endl;
 
 	std::cout << "Print the whole struct: \n" << set;
 }
