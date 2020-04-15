@@ -4,7 +4,7 @@
 
 INTROSPECT_NS_OPEN;
 
-variant base_array::at(size_t i) {
+variant array_mirror::at(size_t i) {
 	size_t len = count();
 	if (i >= len) {
 		std::ostringstream err;
@@ -14,12 +14,12 @@ variant base_array::at(size_t i) {
 	return operator[](i);
 }
 
-void base_array::parse(std::istream& str)
+void array_mirror::parse(std::istream& str)
 {
 	throw std::runtime_error("not implemented");
 }
 
-void base_array::print(std::ostream& str) const
+void array_mirror::print(std::ostream& str) const
 {
 	auto& self = *this;
 	str << "{ " << self[0];
@@ -28,15 +28,14 @@ void base_array::print(std::ostream& str) const
 	str << " }";
 }
 
-void base_enum::parse(std::istream& str)
+void enum_mirror::parse(std::istream& str)
 {
     if (isalpha(str.peek())) {
 		std::string id;
 		str >> id;
 		for (auto& pair : values()) {
-			if (id == pair.name) {
+			if (id == pair.name)
                 return int_value(pair.value);
-			}
 		}
         throw parse_error(std::string("unknown enum value: ") + id);
 	}
@@ -47,7 +46,7 @@ void base_enum::parse(std::istream& str)
     }
 }
 
-void base_enum::print(std::ostream& str) const
+void enum_mirror::print(std::ostream& str) const
 {
     auto value = int_value();
 	for (auto& pair : values()) {
@@ -70,15 +69,15 @@ base_field& base_fields::at(const char *name)
 	throw std::out_of_range("base_struct: failed to find field");
 }
 
-void base_struct::parse(std::istream& str)
+void struct_mirror::parse(std::istream& str)
 {
 	throw std::runtime_error("not implemented");
 }
 
-void base_struct::print(std::ostream& str, const char *prefix) const
+void struct_mirror::print(std::ostream& str, const char *prefix) const
 {
 	for (auto& field : fields()) {
-        auto pstruct = dynamic_cast<base_struct *>(&field.value);
+        auto pstruct = dynamic_cast<struct_mirror *>(&field.value);
         if (pstruct) {
             char full_name[256];
             snprintf(full_name, sizeof(full_name), "%s%s.", prefix, field.name);

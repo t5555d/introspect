@@ -12,12 +12,15 @@ struct mirror;
 
 struct base_mirror;
 class variant;
-struct base_enum;
-struct base_array;
+struct enum_mirror;
+struct array_mirror;
+
+struct visitor;
+struct const_visitor;
 
 struct base_field;
 struct base_fields;
-struct base_struct;
+struct struct_mirror;
 
 struct enum_value;
 

@@ -85,7 +85,7 @@ struct enum_values
 
 #define ENUM_VALUE(name) enum_value __enum__value__##name { #name, name }
 
-struct base_enum : base_mirror
+struct enum_mirror : base_mirror
 {
 	virtual array_ptr<const enum_value> values() const = 0;
 
@@ -98,11 +98,11 @@ struct base_enum : base_mirror
 };
 
 template<typename T>
-struct enum_mirror : typed_mirror<T, base_enum>
+struct typed_enum : typed_mirror<T, enum_mirror>
 {
-	enum_mirror() = default;
-	enum_mirror(const enum_mirror& that) = default;
-	explicit enum_mirror(T& raw) : typed_mirror(raw) {}
+	typed_enum() = default;
+	typed_enum(const typed_enum& that) = default;
+	explicit typed_enum(T& raw) : typed_mirror(raw) {}
 
 	using E = typename std::underlying_type<T>::type;
 
@@ -116,11 +116,11 @@ struct enum_mirror : typed_mirror<T, base_enum>
 };
 
 template<typename T>
-struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: enum_mirror<T>
+struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: typed_enum<T>
 {
     mirror() = default;
     mirror(const mirror& that) = default;
-	explicit mirror(T& raw) : enum_mirror(raw) {}
+	explicit mirror(T& raw) : typed_enum(raw) {}
 };
 
 
@@ -183,22 +183,22 @@ using const_variant = variant;
 
 // arrays
 
-struct base_array : base_mirror
+struct array_mirror : base_mirror
 {
 	virtual size_t count() const = 0;
 
 	virtual variant operator[](size_t i) = 0;
-	const_variant operator[](size_t i) const { return const_cast<base_array *>(this)->operator[](i); }
+	const_variant operator[](size_t i) const { return const_cast<array_mirror *>(this)->operator[](i); }
 
 	variant at(size_t i);
-	const_variant at(size_t i) const { return const_cast<base_array *>(this)->at(i); }
+	const_variant at(size_t i) const { return const_cast<array_mirror *>(this)->at(i); }
 
 	void parse(std::istream& str) override;
 	void print(std::ostream& str) const override;
 };
 
 template<typename T>
-struct typed_array : base_array
+struct typed_array : array_mirror
 {
 	explicit typed_array(T *raw, size_t len) :
 		raw(raw), len(len) {} 

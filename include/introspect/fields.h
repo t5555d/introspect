@@ -106,12 +106,12 @@ protected:
 	virtual array_ptr<const meta_field> meta() const = 0;
 };
 
-struct base_struct : base_mirror
+struct struct_mirror : base_mirror
 {
 	virtual base_fields& fields() = 0;
 
 	const base_fields& fields() const {
-		return const_cast<base_struct *>(this)->fields();
+		return const_cast<struct_mirror *>(this)->fields();
 	}
 
 	void parse(std::istream& str) override;
@@ -157,7 +157,7 @@ protected:
 
 template<typename Struct>
 struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::type> :
-	typed_mirror<Struct, base_struct>,
+	typed_mirror<Struct, struct_mirror>,
 	struct_fields<Struct, real_fields<Struct>>
 {
 	mirror() = default;

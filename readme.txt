@@ -9,11 +9,16 @@ introspect: библиотека для интроспекции структу�
 иерархия:
 base_mirror -> mirror<T>
 base_mirror -> variant
-base_mirror -> base_enum -> mirror<E>, ... # extension point: user defined enums
-base_mirror -> base_array -> mirror<E[N]>
-base_mirror -> base_struct -> struct_mirror<S> -> ... # to be defined by user
+base_mirror -> enum_mirror -> mirror<E>
+base_mirror -> array_mirror -> mirror<E[N]>
+base_mirror -> struct_mirror -> mirror<S>
+
+extension points:
+struct_fields<S> - поля структуры
+enum_values<E> - варианты перечисления
 
 TODO:
+- переход на visitor
 - поддержка ввода массивов
 - поддержка ввода структур (по одному полю)
 ---
