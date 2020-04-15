@@ -4,6 +4,13 @@
 
 INTROSPECT_NS_OPEN;
 
+void int_mirror::parse(std::istream& str)
+{
+    int64_t value;
+    str >> value;
+    int_value(value);
+}
+
 variant array_mirror::at(size_t i) {
 	size_t len = count();
 	if (i >= len) {
@@ -31,19 +38,16 @@ void array_mirror::print(std::ostream& str) const
 void enum_mirror::parse(std::istream& str)
 {
     if (isalpha(str.peek())) {
-		std::string id;
-		str >> id;
-		for (auto& pair : values()) {
-			if (id == pair.name)
+        std::string id;
+        str >> id;
+        for (auto& pair : values()) {
+            if (id == pair.name)
                 return int_value(pair.value);
-		}
+        }
         throw parse_error(std::string("unknown enum value: ") + id);
-	}
-	else {
-        int64_t value;
-        str >> value;
-        return int_value(value);
     }
+    
+    return int_mirror::parse(str);
 }
 
 void enum_mirror::print(std::ostream& str) const

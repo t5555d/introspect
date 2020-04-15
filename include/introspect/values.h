@@ -41,31 +41,77 @@ struct parse_error : std::runtime_error
 template<typename T, typename Base>
 struct typed_mirror : Base
 {
-	typed_mirror() = default;
-	typed_mirror(const typed_mirror& that) = default;
+    typed_mirror() = default;
+    typed_mirror(const typed_mirror& that) = default;
     explicit typed_mirror(T& raw) : raw(&raw) {}
 
-	size_t size() const override { return sizeof(T); }
-	void *addr() override { return raw; }
+    size_t size() const override { return sizeof(T); }
+    void *addr() override { return raw; }
     void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
 
-	T& get() { return *raw; }
-	const T& get() const { return *raw; }
-	void set(T& raw) { addr(&raw); }
+    T& get() { return *raw; }
+    const T& get() const { return *raw; }
+    void set(T& raw) { addr(&raw); }
 
 protected:
-	T *raw = nullptr;
+    T *raw = nullptr;
 };
 
 template<typename T, typename Enable>
 struct mirror : typed_mirror<T, base_mirror>
 {
-	mirror() = default;
-	mirror(const mirror& that) = default;
-	explicit mirror(T& raw) : typed_mirror(raw) {}
+    mirror() = default;
+    mirror(const mirror& that) = default;
+    explicit mirror(T& raw) : typed_mirror(raw) {}
 
-	void parse(std::istream& str) override { str >> *raw; }
-	void print(std::ostream& str) const override { str << *raw; }
+    void parse(std::istream& str) override { str >> *raw; }
+    void print(std::ostream& str) const override { str << *raw; }
+};
+
+//
+// arithmetic types
+//
+
+struct int_mirror : base_mirror
+{
+    virtual int64_t int_value() const = 0;
+    virtual void int_value(int64_t value) = 0;
+
+    virtual void parse(std::istream& str);
+    virtual void print(std::ostream& str) const { str << int_value(); }
+};
+
+template<typename T>
+struct mirror<T, typename std::enable_if<std::is_integral<T>::value>::type> :
+    typed_mirror<T, int_mirror>
+{
+    mirror() = default;
+    mirror(const mirror& that) = default;
+    explicit mirror(T& raw) : typed_mirror(raw) {}
+
+    int64_t int_value() const override { return *raw; }
+    void int_value(int64_t value) override { *raw = static_cast<T>(value); }
+};
+
+struct float_mirror : base_mirror
+{
+    virtual double float_value() const = 0;
+    virtual void float_value(double value) = 0;
+
+    virtual void parse(std::istream& str);
+    virtual void print(std::ostream& str) const { str << float_value(); }
+};
+
+template<typename T>
+struct mirror<T, typename std::enable_if<std::is_floating_point<T>::value>::type> :
+    typed_mirror<T, float_mirror>
+{
+    mirror() = default;
+    mirror(const mirror& that) = default;
+    explicit mirror(T& raw) : typed_mirror(raw) {}
+
+    double float_value() const override { return *raw; }
+    void float_value(double value) override { *raw = static_cast<T>(value); }
 };
 
 // support enumerations
@@ -85,16 +131,12 @@ struct enum_values
 
 #define ENUM_VALUE(name) enum_value __enum__value__##name { #name, name }
 
-struct enum_mirror : base_mirror
+struct enum_mirror : int_mirror
 {
 	virtual array_ptr<const enum_value> values() const = 0;
 
-    virtual int64_t int_value() const = 0;
-    virtual void int_value(int64_t value) = 0;
-
     void parse(std::istream& str) override;
     void print(std::ostream& str) const override;
-
 };
 
 template<typename T>
