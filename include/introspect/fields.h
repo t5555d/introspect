@@ -114,10 +114,7 @@ struct struct_mirror : base_mirror
 		return const_cast<struct_mirror *>(this)->fields();
 	}
 
-	void parse(std::istream& str) override;
-    void print(std::ostream& str) const override { print(str, ""); }
-
-    void print(std::ostream& str, const char *prefix) const;
+    VISIT_IMPL;
 };
 
 template<typename Struct>

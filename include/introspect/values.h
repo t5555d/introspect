@@ -1,11 +1,34 @@
 #pragma once
 
 #include "fwd.h"
-#include <iostream>
 #include <type_traits>
 #include "utils.h"
 
 INTROSPECT_NS_OPEN;
+
+struct visitor
+{
+    virtual void visit(base_mirror& value);
+    virtual void visit(int_mirror& value);
+    virtual void visit(enum_mirror& value);
+    virtual void visit(float_mirror& value);
+    virtual void visit(array_mirror& value);
+    virtual void visit(struct_mirror& value);
+};
+
+struct const_visitor
+{
+    virtual void visit(const base_mirror& value);
+    virtual void visit(const int_mirror& value);
+    virtual void visit(const enum_mirror& value);
+    virtual void visit(const float_mirror& value);
+    virtual void visit(const array_mirror& value);
+    virtual void visit(const struct_mirror& value);
+};
+
+#define VISIT_IMPL \
+    virtual void visit(visitor& v) { v.visit(*this); } \
+    virtual void visit(const_visitor& v) const { v.visit(*this); }
 
 struct base_mirror
 {
@@ -16,26 +39,7 @@ struct base_mirror
 	const void *addr() const { return const_cast<base_mirror *>(this)->addr(); }
     virtual void addr(void *addr) = 0;
 
-	virtual void parse(std::istream& str) = 0;
-	virtual void print(std::ostream& str) const = 0;
-};
-
-inline std::istream& operator >> (std::istream& str, base_mirror& value)
-{
-	return value.parse(str), str;
-}
-
-inline std::ostream& operator << (std::ostream& str, const base_mirror& value)
-{
-	return value.print(str), str;
-}
-
-struct parse_error : std::runtime_error
-{
-    parse_error(const char *message) :
-        std::runtime_error(message) {}
-    parse_error(const std::string& message) :
-        std::runtime_error(message) {}
+    VISIT_IMPL
 };
 
 template<typename T, typename Base>
@@ -63,9 +67,6 @@ struct mirror : typed_mirror<T, base_mirror>
     mirror() = default;
     mirror(const mirror& that) = default;
     explicit mirror(T& raw) : typed_mirror(raw) {}
-
-    void parse(std::istream& str) override { str >> *raw; }
-    void print(std::ostream& str) const override { str << *raw; }
 };
 
 //
@@ -74,11 +75,10 @@ struct mirror : typed_mirror<T, base_mirror>
 
 struct int_mirror : base_mirror
 {
+    VISIT_IMPL;
+
     virtual int64_t int_value() const = 0;
     virtual void int_value(int64_t value) = 0;
-
-    virtual void parse(std::istream& str);
-    virtual void print(std::ostream& str) const { str << int_value(); }
 };
 
 template<typename T>
@@ -95,11 +95,10 @@ struct mirror<T, typename std::enable_if<std::is_integral<T>::value>::type> :
 
 struct float_mirror : base_mirror
 {
+    VISIT_IMPL;
+
     virtual double float_value() const = 0;
     virtual void float_value(double value) = 0;
-
-    virtual void parse(std::istream& str);
-    virtual void print(std::ostream& str) const { str << float_value(); }
 };
 
 template<typename T>
@@ -133,10 +132,9 @@ struct enum_values
 
 struct enum_mirror : int_mirror
 {
-	virtual array_ptr<const enum_value> values() const = 0;
+    VISIT_IMPL;
 
-    void parse(std::istream& str) override;
-    void print(std::ostream& str) const override;
+    virtual array_ptr<const enum_value> values() const = 0;
 };
 
 template<typename T>
@@ -182,32 +180,15 @@ public:
 			value = new T(std::move(init));
 	}
 
-	variant(variant&& var)
-	{
-		if (var.is_inline()) {
-			memcpy(buffer, var.buffer, VARIANT_BUFFER_SIZE);
-			size_t offset = reinterpret_cast<uint8_t *>(var.value) - var.buffer;
-			value = reinterpret_cast<base_mirror *>(buffer + offset);
-		}
-		else
-			value = var.value;
-		var.value = nullptr;
-	}
-
-	~variant() {
-		if (value == nullptr)
-			; // nothing to do
-		else if (is_inline())
-			value->~base_mirror();
-		else
-			delete value;
-	}
+    variant(variant&& var);
+    ~variant();
 
 	size_t size() const override { return value->size(); }
 	void * addr() override { return value->addr(); }
     void addr(void *addr) override { value->addr(addr); }
-	void parse(std::istream& str) override { value->parse(str); }
-	void print(std::ostream& str) const override { value->print(str); }
+
+    void visit(visitor& v) override { value->visit(v); }
+	void visit(const_visitor& v) const override { value->visit(v); }
 
 protected:
 
@@ -227,7 +208,7 @@ using const_variant = variant;
 
 struct array_mirror : base_mirror
 {
-	virtual size_t count() const = 0;
+    virtual size_t count() const = 0;
 
 	virtual variant operator[](size_t i) = 0;
 	const_variant operator[](size_t i) const { return const_cast<array_mirror *>(this)->operator[](i); }
@@ -235,8 +216,7 @@ struct array_mirror : base_mirror
 	variant at(size_t i);
 	const_variant at(size_t i) const { return const_cast<array_mirror *>(this)->at(i); }
 
-	void parse(std::istream& str) override;
-	void print(std::ostream& str) const override;
+    VISIT_IMPL;
 };
 
 template<typename T>
