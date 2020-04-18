@@ -6,6 +6,23 @@
 
 INTROSPECT_NS_OPEN;
 
+struct context_t
+{
+    using impl_t = std::list<const char *>;
+
+    void push(const char *name) { names.push_back(name); }
+    void pop() { names.pop_back(); }
+
+    impl_t::const_iterator begin() const { return names.begin(); }
+    impl_t::const_iterator end() const { return names.end(); }
+    bool empty() const { return names.empty(); }
+
+private:
+    impl_t names;
+};
+
+std::ostream& operator<<(std::ostream& out, const context_t& context);
+
 struct print_visitor : const_visitor
 {
     explicit print_visitor(std::ostream& str) :
@@ -19,12 +36,102 @@ struct print_visitor : const_visitor
 
 private:
 
-    std::list<const char *> context;
+    context_t context;
     std::ostream& out;
 
     const char *end() const {
         return context.empty() ? "" : "\n";
     }
+};
+
+struct scanner
+{
+    scanner(std::istream& str) :
+        input(str), next_token(0, '\0') {}
+
+    enum token_type_t {
+        EOL = -1,
+        NAME = 256,
+        INT,
+        FLOAT,
+    };
+
+    using position_t = uint64_t;
+
+    struct token {
+        position_t pos;
+        int type;
+
+        token(position_t pos, const char *value) :
+            pos(pos), type(NAME), name(value) {}
+
+        token(position_t pos, int64_t value) :
+            pos(pos), type(INT), int_value(value) {}
+
+        token(position_t pos, double value) :
+            pos(pos), type(FLOAT), float_value(value) {}
+
+        token(position_t pos, int value) :
+            pos(pos), type(value) {}
+
+        union {
+            const char *name;
+            int64_t int_value;
+            double float_value;
+        };
+    };
+
+    const token& peek() {
+        if (!next_read) {
+            next_token = read();
+            next_read = true;
+        }
+        return next_token;
+    }
+    
+    token get() {
+        if (!next_read)
+            return read();
+        next_read = false;
+        return next_token;
+    }
+
+    bool unget(token t) {
+        if (next_read)
+            return false;
+        next_token = t;
+        next_read = true;
+        return true;
+    }
+
+    template<typename... TokenType>
+    token expect(TokenType... args) {
+        auto& t = peek();
+        int expected_types[] = { args... };
+        for (auto expected_type : expected_types) {
+            if (t.type == expected_type)
+                return get();
+        }
+        throw std::runtime_error("Unexpected token");
+    }
+
+private:
+    static constexpr size_t MAX_TOKEN_LENGTH = 256;
+
+    std::istream& input;
+    char token_text[MAX_TOKEN_LENGTH];
+
+    token read();
+
+    token next_token;
+    bool next_read = false;
+
+    using char_pred = int (*) (int c);
+    static int sameline(int c) { return c != '\n'; }
+    static int myspace(int c) { return isspace(c) && c != '\n'; }
+
+    size_t read_while(char *buf, size_t buf_size, char_pred cond);
+    void skip_while(char_pred cond);
 };
 
 struct parse_visitor : visitor
@@ -34,9 +141,13 @@ struct parse_visitor : visitor
 
     void visit(int_mirror& value) override;
     void visit(enum_mirror& value) override;
+    void visit(float_mirror& value) override;
+    void visit(array_mirror& value) override;
+    void visit(struct_mirror& value) override;
 
 private:
-    std::istream& input;
+    scanner input;
+    context_t context;
 };
 
 inline std::istream& operator >> (std::istream& str, base_mirror& value)

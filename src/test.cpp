@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <utility>
 #include <stdint.h>
 #include "introspect/fields.h"
@@ -114,4 +115,14 @@ int main()
     std::cout << set.e.name << "." << set.e.value.z.name << " = " << set.e.value.z.value << std::endl;
 
 	std::cout << "Print the whole struct: \n" << set;
+
+    std::stringstream buffer;
+    buffer << set;
+    set_defaults(&settings);
+    std::cout << "After set_defaults: \n" << set;
+
+    while (!buffer.eof())
+        buffer >> set;
+    std::cout << "After parsing: \n" << set;
+
 }
