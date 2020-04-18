@@ -50,11 +50,13 @@ struct scanner
         input(str), next_token(0, '\0') {}
 
     enum token_type_t {
-        EOL = -1,
-        NAME = 256,
+        EOL = 256,
+        NAME,
         INT,
         FLOAT,
     };
+
+    static std::string token_name(int type);
 
     using position_t = uint64_t;
 
@@ -106,13 +108,8 @@ struct scanner
 
     template<typename... TokenType>
     token expect(TokenType... args) {
-        auto& t = peek();
         int expected_types[] = { args... };
-        for (auto expected_type : expected_types) {
-            if (t.type == expected_type)
-                return get();
-        }
-        throw std::runtime_error("Unexpected token");
+        return expect_impl(std::begin(expected_types), std::end(expected_types));
     }
 
 private:
@@ -132,6 +129,16 @@ private:
 
     size_t read_while(char *buf, size_t buf_size, char_pred cond);
     void skip_while(char_pred cond);
+
+    token expect_impl(const int *beg, const int *end);
+};
+
+struct token_error : parse_error
+{
+    token_error(const scanner::token& token);
+
+    std::string token;
+    uint64_t pos;
 };
 
 struct parse_visitor : visitor

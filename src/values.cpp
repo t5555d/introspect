@@ -1,18 +1,19 @@
 #include "introspect/values.h"
 #include "introspect/fields.h"
 #include "introspect/io.h"
+#include "introspect/errors.h"
 #include <sstream>
 
 INTROSPECT_NS_OPEN;
 
-void visitor::visit(base_mirror& value) { throw std::runtime_error("visit not implemented"); }
+void visitor::visit(base_mirror& value) { throw not_implemented(__FUNCTION__); }
 void visitor::visit(int_mirror& value) { visit(static_cast<base_mirror&>(value)); }
 void visitor::visit(enum_mirror& value) { visit(static_cast<int_mirror&>(value)); }
 void visitor::visit(float_mirror& value) { visit(static_cast<base_mirror&>(value)); }
 void visitor::visit(array_mirror& value) { visit(static_cast<base_mirror&>(value)); }
 void visitor::visit(struct_mirror& value) { visit(static_cast<base_mirror&>(value)); }
 
-void const_visitor::visit(const base_mirror& value) { throw std::runtime_error("visit not implemented"); }
+void const_visitor::visit(const base_mirror& value) { throw not_implemented(__FUNCTION__); }
 void const_visitor::visit(const int_mirror& value) { visit(static_cast<const base_mirror&>(value)); }
 void const_visitor::visit(const enum_mirror& value) { visit(static_cast<const int_mirror&>(value)); }
 void const_visitor::visit(const float_mirror& value) { visit(static_cast<const base_mirror&>(value)); }
@@ -42,11 +43,8 @@ variant::~variant() {
 
 variant array_mirror::at(size_t i) {
 	size_t len = count();
-	if (i >= len) {
-		std::ostringstream err;
-		err << "base_array::at: illegal index " << i << " >= " << len;
-		throw std::out_of_range(err.str());
-	}
+    if (i >= len)
+        throw bad_idx_error(i, len);
 	return operator[](i);
 }
 
@@ -56,7 +54,7 @@ base_field& base_fields::at(const char *name)
 		if (0 == strcmp(field.name, name))
 			return field;
 	}
-	throw std::out_of_range("base_struct: failed to find field");
+    throw bad_key_error(name);
 }
 
 INTROSPECT_NS_CLOSE;

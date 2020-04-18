@@ -1,5 +1,6 @@
 #include "introspect/io.h"
 #include "introspect/fields.h"
+#include "introspect/errors.h"
 #include <string>
 
 INTROSPECT_NS_OPEN;
@@ -114,7 +115,7 @@ scanner::token scanner::read()
         if (c == '-' || c == '+') {
             c = input.get();
             if (!isdigit(c))
-                throw std::runtime_error("Syntax error: expected number after +/-");
+                throw token_error({ input.tellg(), c });
             *end++ = c;
         }
 
@@ -138,7 +139,31 @@ scanner::token scanner::read()
         return{ pos, value };
     }
 
-    throw std::runtime_error("Unexpected character");
+    throw token_error({ pos, c });
+}
+
+scanner::token scanner::expect_impl(const int *expected_type, const int *end)
+{
+    auto& t = peek();
+    for (; expected_type != end; expected_type++) {
+        if (t.type == *expected_type)
+            return get();
+    }
+    throw token_error(t);
+}
+
+std::string scanner::token_name(int type) {
+    if (type < EOL) {
+        char buf[] = { '\'', char(type), '\'', '\0' };
+        return buf;
+    }
+    static const char *names[] = {
+        "end-of-line",
+        "identifier",
+        "integer",
+        "float"
+    };
+    return names[type - EOL];
 }
 
 //
@@ -166,7 +191,7 @@ void parse_visitor::visit(enum_mirror& value)
             if (0 == strcmp(var.name, token.name))
                 return value.int_value(var.value);
         }
-        throw std::runtime_error("Unknown enum value");
+        throw bad_key_error(token.name);
     }
     value.int_value(token.int_value);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fwd.h"
+#include "errors.h"
 #include <type_traits>
 #include "utils.h"
 
@@ -231,9 +232,8 @@ struct typed_array : array_mirror
     void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
 
 	variant operator[](size_t i) override { 
-		if (i >= len) {
-			throw std::out_of_range("typed_array::at: out of range");
-		}
+        if (i >= len)
+            throw bad_idx_error(i, len);
 		return mirror<T>(raw[i]);
 	}
 
