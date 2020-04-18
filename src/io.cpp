@@ -191,7 +191,7 @@ void parse_visitor::visit(enum_mirror& value)
             if (0 == strcmp(var.name, token.name))
                 return value.int_value(var.value);
         }
-        throw bad_key_error(token.name);
+        throw bad_key_error(token.name, value.type());
     }
     value.int_value(token.int_value);
 }

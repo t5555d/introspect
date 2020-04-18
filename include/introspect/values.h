@@ -39,6 +39,7 @@ struct base_mirror
 	virtual void *addr() = 0;
 	const void *addr() const { return const_cast<base_mirror *>(this)->addr(); }
     virtual void addr(void *addr) = 0;
+    virtual const char *type() const = 0;
 
     VISIT_IMPL
 };
@@ -53,6 +54,7 @@ struct typed_mirror : Base
     size_t size() const override { return sizeof(T); }
     void *addr() override { return raw; }
     void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
+    const char *type() const override { return typeid(T).name(); }
 
     T& get() { return *raw; }
     const T& get() const { return *raw; }
@@ -187,6 +189,7 @@ public:
 	size_t size() const override { return value->size(); }
 	void * addr() override { return value->addr(); }
     void addr(void *addr) override { value->addr(addr); }
+    const char *type() const override { return value->type(); }
 
     void visit(visitor& v) override { value->visit(v); }
 	void visit(const_visitor& v) const override { value->visit(v); }
@@ -223,7 +226,8 @@ struct array_mirror : base_mirror
 template<typename T>
 struct typed_array : array_mirror
 {
-	explicit typed_array(T *raw, size_t len) :
+    typed_array(const typed_array& that) = default;
+    explicit typed_array(T *raw, size_t len) :
 		raw(raw), len(len) {} 
 
 	size_t count() const override { return len; }
@@ -247,11 +251,14 @@ struct mirror<E[N]> : typed_array<E>
 {
 	using T = E[N];
 
+    mirror() : typed_array(nullptr, N) {}
+    mirror(const mirror& that) = default;
 	explicit mirror(T& raw) :
 		typed_array(raw, N) {}
 
 	T& get() { return *reinterpret_cast<T *>(raw); }
 	const T& get() const { return *reinterpret_cast<T *>(raw); }
+    const char *type() const override { return typeid(T).name(); }
 
 	void set(T& value) { raw = &value[0]; }
 };

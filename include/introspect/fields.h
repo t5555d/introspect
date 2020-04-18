@@ -104,6 +104,7 @@ struct base_fields
 
 protected:
 	virtual array_ptr<const meta_field> meta() const = 0;
+    virtual const char *type() const = 0;
 };
 
 struct struct_mirror : base_mirror
@@ -125,9 +126,8 @@ struct real_fields : base_fields
 	{
 		typename mirror<E> value;
 
-		field(const char *name, Struct& str, E& raw) :
-			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value),
-			value(raw)
+		field(const char *name, const Struct& str, const E& raw) :
+			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value)
 		{
 		}
 	};
@@ -139,6 +139,8 @@ struct real_fields : base_fields
         }
 	}
 
+    const char *type() const override { return typeid(Struct).name(); }
+
 protected:
 
 	using child_fields = struct_fields<Struct, real_fields<Struct>>;
@@ -149,7 +151,7 @@ protected:
 		return array_cast<const meta_field>(x);
 	}
 
-	Struct *raw = nullptr;
+    static constexpr const Struct *raw = nullptr; // fake raw pointer
 };
 
 template<typename Struct>

@@ -83,46 +83,52 @@ int main()
     settings.e.y = 40;
     settings.e.z = 45;
 
-	settings_c set(settings);
+    try {
+        settings_c set(settings);
 
-	std::cout << "Accessing raw values: " << std::endl;
-	std::cout << set.a.name << " = " << set.a.value.get() << std::endl;
-	std::cout << set.b.name << " = " << set.b.value.get() << std::endl;
-	std::cout << set.c.name << " = " << set.c.value.get() << std::endl;
-	std::cout << set.d.name << " = " << set.d.value.get() << std::endl;
-	std::cout << set.d.name << " = "
-		<< "{ " << set.d.value.get()[0]
-		<< ", " << set.d.value.get()[1]
-		<< ", " << set.d.value.get()[2]
-		<< " }" << std::endl;
-    std::cout << set.e.name << ".x = " << set.e.value.get().x << std::endl;
-    std::cout << set.e.name << ".y = " << set.e.value.get().y << std::endl;
-    std::cout << set.e.name << ".z = " << set.e.value.get().z << std::endl;
+        std::cout << "Accessing raw values: " << std::endl;
+        std::cout << set.a.name << " = " << set.a.value.get() << std::endl;
+        std::cout << set.b.name << " = " << set.b.value.get() << std::endl;
+        std::cout << set.c.name << " = " << set.c.value.get() << std::endl;
+        std::cout << set.d.name << " = " << set.d.value.get() << std::endl;
+        std::cout << set.d.name << " = "
+            << "{ " << set.d.value.get()[0]
+            << ", " << set.d.value.get()[1]
+            << ", " << set.d.value.get()[2]
+            << " }" << std::endl;
+        std::cout << set.e.name << ".x = " << set.e.value.get().x << std::endl;
+        std::cout << set.e.name << ".y = " << set.e.value.get().y << std::endl;
+        std::cout << set.e.name << ".z = " << set.e.value.get().z << std::endl;
 
-	std::cout << "Accessing mirrors: " << std::endl;
-	std::cout << set.a.name << " = " << set.a.value << std::endl;
-	std::cout << set.b.name << " = " << set.b.value << std::endl;
-	std::cout << set.c.name << " = " << set.c.value << std::endl;
-	std::cout << set.d.name << " = " << set.d.value << std::endl;
-	std::cout << set.d.name << " = "
-		<< "{ " << set.d.value[0]
-		<< ", " << set.d.value[1]
-		<< ", " << set.d.value[2]
-		<< " }" << std::endl;
+        std::cout << "Accessing mirrors: " << std::endl;
+        std::cout << set.a.name << " = " << set.a.value << std::endl;
+        std::cout << set.b.name << " = " << set.b.value << std::endl;
+        std::cout << set.c.name << " = " << set.c.value << std::endl;
+        std::cout << set.d.name << " = " << set.d.value << std::endl;
+        std::cout << set.d.name << " = "
+            << "{ " << set.d.value[0]
+            << ", " << set.d.value[1]
+            << ", " << set.d.value[2]
+            << " }" << std::endl;
 
-    std::cout << set.e.name << "." << set.e.value.x.name << " = " << set.e.value.x.value << std::endl;
-    std::cout << set.e.name << "." << set.e.value.y.name << " = " << set.e.value.y.value << std::endl;
-    std::cout << set.e.name << "." << set.e.value.z.name << " = " << set.e.value.z.value << std::endl;
+        std::cout << set.e.name << "." << set.e.value.x.name << " = " << set.e.value.x.value << std::endl;
+        std::cout << set.e.name << "." << set.e.value.y.name << " = " << set.e.value.y.value << std::endl;
+        std::cout << set.e.name << "." << set.e.value.z.name << " = " << set.e.value.z.value << std::endl;
 
-	std::cout << "Print the whole struct: \n" << set;
+        std::cout << "Print the whole struct: \n" << set;
 
-    std::stringstream buffer;
-    buffer << set;
-    set_defaults(&settings);
-    std::cout << "After set_defaults: \n" << set;
+        std::stringstream buffer;
+        buffer << set;
+        set_defaults(&settings);
+        std::cout << "After set_defaults: \n" << set;
 
-    while (!buffer.eof())
-        buffer >> set;
-    std::cout << "After parsing: \n" << set;
+        while (!buffer.eof())
+            buffer >> set;
+        std::cout << "After parsing: \n" << set;
+
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Exception occurred: " << e.what() << std::endl;
+    }
 
 }

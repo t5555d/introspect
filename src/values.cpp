@@ -54,7 +54,7 @@ base_field& base_fields::at(const char *name)
 		if (0 == strcmp(field.name, name))
 			return field;
 	}
-    throw bad_key_error(name);
+    throw bad_key_error(name, type());
 }
 
 INTROSPECT_NS_CLOSE;

@@ -22,8 +22,8 @@ bad_idx_error::bad_idx_error(ptrdiff_t index, ptrdiff_t size) :
     std::out_of_range(beg() << "Index out of range: " << index << " >= " << size << end()),
     index(index), size(size) {}
 
-bad_key_error::bad_key_error(const char *key) :
-    std::out_of_range(beg() << "Key not found: " << key << end()),
+bad_key_error::bad_key_error(const char *key, const char *dict) :
+    std::out_of_range(beg() << "Key not found: " << dict << "::" << key << end()),
     key(key) {}
 
 token_error::token_error(const scanner::token& token) :

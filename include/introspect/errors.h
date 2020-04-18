@@ -20,7 +20,7 @@ struct bad_idx_error : std::out_of_range
 
 struct bad_key_error : std::out_of_range
 {
-    bad_key_error(const char *key);
+    bad_key_error(const char *key, const char *dict);
     const std::string key;
 };
 
