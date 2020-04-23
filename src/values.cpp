@@ -51,7 +51,7 @@ variant array_mirror::at(size_t i) {
 base_field& base_fields::at(const char *name)
 {
 	for (auto& field : *this) {
-		if (0 == strcmp(field.name, name))
+		if (0 == strcmp(field.name(), name))
 			return field;
 	}
     throw bad_key_error(name, type());

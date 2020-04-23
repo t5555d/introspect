@@ -12,7 +12,7 @@ struct struct_fields : Fields
 };
 
 // interface of Fields::field
-#define STRUCT_FIELD(name) typename Fields::template field<decltype(raw->name)> name { #name, *raw, raw->name }
+#define STRUCT_FIELD(name, ...) typename Fields::template field<decltype(raw->name)> name { #name, *raw, raw->name, __VA_ARGS__ }
 
 struct meta_field {
 	ptrdiff_t offset;
@@ -27,25 +27,39 @@ protected:
 
 	template<typename Field>
 	struct field : meta_field {
-		field(const char *name, const base_fields& s, const base_field& f) :
+		field(const char *name, const base_fields& s, const base_field& f, ...) :
 			meta_field{ ptrdiff_t(&f) - ptrdiff_t(&s) }
 		{
 		}
 	};
 };
 
+struct with_name {
+    explicit with_name(const char *name) : name(name) {}
+    const char *name;
+};
+
 struct base_field
 {
 	base_field(const char *name, size_t offset, base_mirror& value) :
-		name(name), offset(offset), value(value)
+		m_name(name), offset(offset), value(value)
 	{
 	}
 	virtual ~base_field() {}
 
-	const char * const name;
-	const size_t offset;
-	base_mirror& value;
+    const size_t offset;
+    base_mirror& value;
+
+    const char *name() const { return m_name; }
+
+private:
+    friend void apply_field_attribute(base_field& field, with_name attr);
+    const char *m_name;
 };
+
+inline void apply_field_attribute(base_field& field, with_name attr) {
+    field.m_name = attr.name;
+}
 
 struct base_fields
 {
@@ -126,9 +140,11 @@ struct real_fields : base_fields
 	{
 		typename mirror<E> value;
 
-		field(const char *name, const Struct& str, const E& raw) :
+        template<typename... Args>
+		field(const char *name, const Struct& str, const E& raw, Args... args) :
 			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value)
 		{
+            int dummy[]{ 0, (apply_field_attribute(*this, args), 0)... };
 		}
 	};
 
