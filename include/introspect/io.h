@@ -133,14 +133,6 @@ private:
     token expect_impl(const int *beg, const int *end);
 };
 
-struct token_error : parse_error
-{
-    token_error(const scanner::token& token);
-
-    std::string token;
-    uint64_t pos;
-};
-
 struct parse_visitor : visitor
 {
     explicit parse_visitor(std::istream& str) :
@@ -155,6 +147,27 @@ struct parse_visitor : visitor
 private:
     scanner input;
     context_t context;
+};
+
+struct parse_error : std::runtime_error
+{
+    parse_error(const std::string& message) :
+        std::runtime_error(message) {}
+};
+
+struct token_error : parse_error
+{
+    token_error(const scanner::token& token);
+
+    std::string token;
+    uint64_t pos;
+};
+
+struct low_count_error : parse_error
+{
+    low_count_error(size_t count, size_t min_count);
+    size_t count;
+    size_t min_count;
 };
 
 inline std::istream& operator >> (std::istream& str, base_mirror& value)

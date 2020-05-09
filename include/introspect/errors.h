@@ -24,10 +24,4 @@ struct bad_key_error : std::out_of_range
     const std::string key;
 };
 
-struct parse_error : std::runtime_error
-{
-    parse_error(const std::string& message) : 
-        std::runtime_error(message) {}
-};
-
 INTROSPECT_NS_CLOSE;

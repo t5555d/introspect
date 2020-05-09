@@ -115,7 +115,7 @@ scanner::token scanner::read()
         if (c == '-' || c == '+') {
             c = input.get();
             if (!isdigit(c))
-                throw token_error({ input.tellg(), c });
+                throw token_error({ scanner::position_t(input.tellg()), c });
             *end++ = c;
         }
 
