@@ -12,7 +12,7 @@ struct struct_fields : Fields
 };
 
 // interface of Fields::field
-#define STRUCT_FIELD(name, ...) typename Fields::template field<decltype(raw->name)> name { #name, raw, &raw->name, __VA_ARGS__ }
+#define STRUCT_FIELD(name, ...) decltype(create_field(#name, raw, &raw->name)) name = create_field(#name, raw, &raw->name, __VA_ARGS__)
 
 struct meta_field {
 	ptrdiff_t offset;
@@ -25,13 +25,11 @@ protected:
 
 	static constexpr const Struct *raw = nullptr; // fake raw pointer
 
-	template<typename Field>
-	struct field : meta_field {
-		field(const char *name, const base_fields *s, const base_field *f, ...) :
-			meta_field{ ptrdiff_t(f) - ptrdiff_t(s) }
-		{
-		}
-	};
+	static meta_field create_field(const char* name, const base_fields* s, const base_field* f, ...)
+	{
+		auto offset = ptrdiff_t(f) - ptrdiff_t(s);
+		return { offset };
+	}
 };
 
 struct base_field : virtual base_mirror
@@ -59,6 +57,13 @@ struct with_name
 	void apply(base_field& field) {
 		field.m_name = name;
 	}
+};
+
+template <typename T>
+struct real_field : base_field, mirror<T>
+{
+	real_field(const char* name, size_t offset) :
+		base_field(name, offset) {}
 };
 
 struct base_fields
@@ -135,18 +140,6 @@ struct struct_mirror : virtual base_mirror
 template<typename Struct>
 struct real_fields : base_fields
 {
-	template <typename T>
-	struct field : base_field, mirror<T>
-	{
-        template<typename... Args>
-		field(const char *name, const Struct *str, const T *raw, Args... args) :
-			base_field(name, uintptr_t(raw) - uintptr_t(str))
-		{
-            int dummy[]{ 0, (args.apply(*this), 0)... };
-		}
-
-	};
-
 	void set_fields(Struct& value) {
         auto base = reinterpret_cast<uint8_t *>(&value);
         for (auto& field : *this) {
@@ -167,6 +160,14 @@ protected:
 	}
 
     static constexpr const Struct *raw = nullptr; // fake raw pointer
+
+	template<typename T, typename... Args>
+	static real_field<T> create_field(const char* name, const Struct* s, const T* f, Args... args)
+	{
+		real_field<T> field(name, ptrdiff_t(f) - ptrdiff_t(s));
+		int dummy[]{ 0, (args.apply(field), 0)... };
+		return field;
+	}
 };
 
 template<typename Struct>
