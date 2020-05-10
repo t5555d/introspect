@@ -39,10 +39,10 @@ void set_defaults(settings_t *set)
 }
 
 template<>
-struct enum_values<enum_t>
+struct enum_options<enum_t>
 {
-	ENUM_VALUE(VALUE0);
-	ENUM_VALUE(VALUE1);
+	ENUM_OPTION(VALUE0);
+	ENUM_OPTION(VALUE1);
 };
 
 template<typename Fields>

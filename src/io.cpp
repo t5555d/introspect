@@ -35,7 +35,7 @@ void print_visitor::visit(const enum_mirror& value)
 {
     out << context;
     auto int_value = value.int_value();
-    for (auto& pair : value.values()) {
+    for (auto& pair : value.options()) {
         if (pair.value == int_value) {
             out << pair.name << end();
             return;
@@ -187,7 +187,7 @@ void parse_visitor::visit(enum_mirror& value)
 {
     auto token = input.expect(scanner::INT, scanner::NAME);
     if (token.type == scanner::NAME) {
-        for (auto& var : value.values()) {
+        for (auto& var : value.options()) {
             if (0 == strcmp(var.name, token.name))
                 return value.int_value(var.value);
         }

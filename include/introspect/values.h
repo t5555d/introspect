@@ -118,26 +118,26 @@ struct mirror<T, typename std::enable_if<std::is_floating_point<T>::value>::type
 
 // support enumerations
 
-struct enum_value
+struct enum_option
 {
 	const char * name;
 	int64_t value;
 };
 
 template<typename T>
-struct enum_values
+struct enum_options
 {
 	// specialize this template for your enum
-	// and define enum_value's inside
+	// and define enum_option's inside
 };
 
-#define ENUM_VALUE(name) enum_value __enum__value__##name { #name, name }
+#define ENUM_OPTION(name) enum_option __enum__option__##name { #name, name }
 
 struct enum_mirror : int_mirror
 {
     VISIT_IMPL;
 
-    virtual array_ptr<const enum_value> values() const = 0;
+    virtual array_ptr<const enum_option> options() const = 0;
 };
 
 template<typename T>
@@ -147,14 +147,12 @@ struct typed_enum : typed_mirror<T, enum_mirror>
 	typed_enum(const typed_enum& that) = default;
 	explicit typed_enum(T& raw) : typed_mirror(raw) {}
 
-	using E = typename std::underlying_type<T>::type;
-
     int64_t int_value() const override { return *raw; }
     void int_value(int64_t value) override { *raw = static_cast<T>(value); }
 
-	array_ptr<const enum_value> values() const override {
-		static enum_values<T> x;
-		return array_cast<enum_value>(x);
+	array_ptr<const enum_option> options() const override {
+		static enum_options<T> x;
+		return array_cast<enum_option>(x);
 	}
 };
 
