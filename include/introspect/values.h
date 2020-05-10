@@ -31,6 +31,8 @@ struct const_visitor
     virtual void visit(visitor& v) { v.visit(*this); } \
     virtual void visit(const_visitor& v) const { v.visit(*this); }
 
+
+#pragma warning(disable:4250) // virtual inheritance warning
 struct base_mirror
 {
 	virtual ~base_mirror() {}
