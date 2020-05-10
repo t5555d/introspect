@@ -13,9 +13,9 @@ std::ostream& operator<<(std::ostream& out, const context_t& context)
 {
     auto i = context.begin();
     if (i != context.end()) {
-        out << *i;
+        out << (*i)->name();
         while (++i != context.end())
-            out << "." << *i;
+            out << "." << (*i)->name();
         out << " = ";
     }
     return out;
@@ -55,7 +55,7 @@ void print_visitor::visit(const array_mirror& value)
 void print_visitor::visit(const struct_mirror& value)
 {
     for (auto& field : value.fields()) {
-        context.push(field.name());
+        context.push(field);
         field.value().visit(*this);
         context.pop();
     }
@@ -227,7 +227,7 @@ void parse_visitor::visit(struct_mirror& value)
     auto *nested_struct = dynamic_cast<struct_mirror *>(&field.value());
     input.expect(nested_struct ? '.' : '=');
 
-    context.push(field.name());
+    context.push(field);
     field.value().visit(*this);
     context.pop();
 

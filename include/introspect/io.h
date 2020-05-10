@@ -8,9 +8,9 @@ INTROSPECT_NS_OPEN;
 
 struct context_t
 {
-    using impl_t = std::list<const char *>;
+    using impl_t = std::list<const base_field *>;
 
-    void push(const char *name) { names.push_back(name); }
+    void push(const base_field& field) { names.push_back(&field); }
     void pop() { names.pop_back(); }
 
     impl_t::const_iterator begin() const { return names.begin(); }
@@ -107,8 +107,8 @@ struct scanner
     }
 
     template<typename... TokenType>
-    token expect(TokenType... args) {
-        int expected_types[] = { args... };
+    token expect(TokenType... token_types) {
+        int expected_types[] = { token_types... };
         return expect_impl(std::begin(expected_types), std::end(expected_types));
     }
 
