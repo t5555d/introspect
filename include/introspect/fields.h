@@ -34,11 +34,6 @@ protected:
 	};
 };
 
-struct with_name {
-    explicit with_name(const char *name) : name(name) {}
-    const char *name;
-};
-
 struct base_field
 {
 	base_field(const char *name, size_t offset) :
@@ -54,13 +49,19 @@ struct base_field
 	const base_mirror& value() const { return const_cast<base_field*>(this)->value(); }
 
 private:
-    friend void apply_field_attribute(base_field& field, with_name attr);
+	friend struct with_name;
     const char *m_name;
 };
 
-inline void apply_field_attribute(base_field& field, with_name attr) {
-    field.m_name = attr.name;
-}
+struct with_name
+{
+	explicit with_name(const char* name) : name(name) {}
+	const char* name;
+
+	void apply(base_field& field) {
+		field.m_name = name;
+	}
+};
 
 struct base_fields
 {
@@ -143,7 +144,7 @@ struct real_fields : base_fields
 		field(const char *name, const Struct *str, const T *raw, Args... args) :
 			base_field(name, uintptr_t(raw) - uintptr_t(str))
 		{
-            int dummy[]{ 0, (apply_field_attribute(*this, args), 0)... };
+            int dummy[]{ 0, (args.apply(*this), 0)... };
 		}
 
 		base_mirror& value() override { return *this; }
