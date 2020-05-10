@@ -12,7 +12,7 @@ struct struct_fields : Fields
 };
 
 // interface of Fields::field
-#define STRUCT_FIELD(name, ...) typename Fields::template field<decltype(raw->name)> name { #name, *raw, raw->name, __VA_ARGS__ }
+#define STRUCT_FIELD(name, ...) typename Fields::template field<decltype(raw->name)> name { #name, raw, &raw->name, __VA_ARGS__ }
 
 struct meta_field {
 	ptrdiff_t offset;
@@ -27,8 +27,8 @@ protected:
 
 	template<typename Field>
 	struct field : meta_field {
-		field(const char *name, const base_fields& s, const base_field& f, ...) :
-			meta_field{ ptrdiff_t(&f) - ptrdiff_t(&s) }
+		field(const char *name, const base_fields *s, const base_field *f, ...) :
+			meta_field{ ptrdiff_t(f) - ptrdiff_t(s) }
 		{
 		}
 	};
@@ -41,16 +41,17 @@ struct with_name {
 
 struct base_field
 {
-	base_field(const char *name, size_t offset, base_mirror& value) :
-		m_name(name), offset(offset), value(value)
+	base_field(const char *name, size_t offset) :
+		m_name(name), offset(offset)
 	{
 	}
 	virtual ~base_field() {}
 
     const size_t offset;
-    base_mirror& value;
 
     const char *name() const { return m_name; }
+	virtual base_mirror& value() = 0;
+	const base_mirror& value() const { return const_cast<base_field*>(this)->value(); }
 
 private:
     friend void apply_field_attribute(base_field& field, with_name attr);
@@ -135,23 +136,24 @@ struct struct_mirror : base_mirror
 template<typename Struct>
 struct real_fields : base_fields
 {
-	template <typename E>
-	struct field : public base_field
+	template <typename T>
+	struct field : base_field, mirror<T>
 	{
-		typename mirror<E> value;
-
         template<typename... Args>
-		field(const char *name, const Struct& str, const E& raw, Args... args) :
-			base_field(name, uintptr_t(&raw) - uintptr_t(&str), value)
+		field(const char *name, const Struct *str, const T *raw, Args... args) :
+			base_field(name, uintptr_t(raw) - uintptr_t(str))
 		{
             int dummy[]{ 0, (apply_field_attribute(*this, args), 0)... };
 		}
+
+		base_mirror& value() override { return *this; }
 	};
 
 	void set_fields(Struct& value) {
         auto base = reinterpret_cast<uint8_t *>(&value);
         for (auto& field : *this) {
-            field.value.addr(base + field.offset);
+			auto& value = field.value();
+            value.addr(base + field.offset);
         }
 	}
 
