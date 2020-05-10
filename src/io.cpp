@@ -56,7 +56,7 @@ void print_visitor::visit(const struct_mirror& value)
 {
     for (auto& field : value.fields()) {
         context.push(field);
-        field.value().visit(*this);
+        field.visit(*this);
         context.pop();
     }
 }
@@ -224,11 +224,11 @@ void parse_visitor::visit(struct_mirror& value)
         return;
     auto& field = value.fields()[name.name];
 
-    auto *nested_struct = dynamic_cast<struct_mirror *>(&field.value());
+    auto *nested_struct = dynamic_cast<struct_mirror *>(&field);
     input.expect(nested_struct ? '.' : '=');
 
     context.push(field);
-    field.value().visit(*this);
+    field.visit(*this);
     context.pop();
 
     if (context.empty())

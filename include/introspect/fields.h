@@ -34,7 +34,7 @@ protected:
 	};
 };
 
-struct base_field
+struct base_field : virtual base_mirror
 {
 	base_field(const char *name, size_t offset) :
 		m_name(name), offset(offset)
@@ -45,8 +45,6 @@ struct base_field
     const size_t offset;
 
     const char *name() const { return m_name; }
-	virtual base_mirror& value() = 0;
-	const base_mirror& value() const { return const_cast<base_field*>(this)->value(); }
 
 private:
 	friend struct with_name;
@@ -123,7 +121,7 @@ protected:
     virtual const char *type() const = 0;
 };
 
-struct struct_mirror : base_mirror
+struct struct_mirror : virtual base_mirror
 {
 	virtual base_fields& fields() = 0;
 
@@ -147,14 +145,12 @@ struct real_fields : base_fields
             int dummy[]{ 0, (args.apply(*this), 0)... };
 		}
 
-		base_mirror& value() override { return *this; }
 	};
 
 	void set_fields(Struct& value) {
         auto base = reinterpret_cast<uint8_t *>(&value);
         for (auto& field : *this) {
-			auto& value = field.value();
-            value.addr(base + field.offset);
+            field.addr(base + field.offset);
         }
 	}
 

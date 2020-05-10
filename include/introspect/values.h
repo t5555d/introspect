@@ -76,7 +76,7 @@ struct mirror : typed_mirror<T, base_mirror>
 // arithmetic types
 //
 
-struct int_mirror : base_mirror
+struct int_mirror : virtual base_mirror
 {
     VISIT_IMPL;
 
@@ -96,7 +96,7 @@ struct mirror<T, typename std::enable_if<std::is_integral<T>::value>::type> :
     void int_value(int64_t value) override { *raw = static_cast<T>(value); }
 };
 
-struct float_mirror : base_mirror
+struct float_mirror : virtual base_mirror
 {
     VISIT_IMPL;
 
@@ -167,7 +167,7 @@ struct mirror<T, typename std::enable_if<std::is_enum<T>::value>::type>: typed_e
 
 // value pointers
 
-static constexpr size_t VARIANT_BUFFER_SIZE = sizeof(uintptr_t) * 4;
+static constexpr size_t VARIANT_BUFFER_SIZE = sizeof(uintptr_t) * 8;
 
 class variant : public base_mirror
 {
@@ -208,7 +208,7 @@ using const_variant = variant;
 
 // arrays
 
-struct array_mirror : base_mirror
+struct array_mirror : virtual base_mirror
 {
     virtual size_t count() const = 0;
 
