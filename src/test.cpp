@@ -62,7 +62,7 @@ STRUCT_FIELDS(settings_t)
 
 // generic introspective settings
 
-using settings_c = mirror<settings_t>;
+using settings_c = mirror<settings_t, simple_fields>;
 
 int main()
 {

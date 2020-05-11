@@ -7,7 +7,7 @@
 
 INTROSPECT_NS_OPEN;
 
-template<typename T, typename Enable = void>
+template<typename T, typename Fields = void, typename Enable = void>
 struct mirror;
 
 struct base_mirror;

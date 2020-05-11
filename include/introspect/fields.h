@@ -151,7 +151,7 @@ struct meta_fields
 struct simple_fields
 {
 	template <typename T>
-	struct field : base_field, mirror<T>
+	struct field : base_field, mirror<T, typename std::conditional<std::is_class<T>::value, simple_fields, void>::type>
 	{
 		field(const char* name, ptrdiff_t offset) :
 			base_field(name, offset) {}
@@ -200,10 +200,10 @@ struct struct_mirror : virtual base_mirror
 	VISIT_IMPL;
 };
 
-template<typename Struct>
-struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::type> :
+template<typename Struct, typename Fields>
+struct mirror<Struct, Fields, typename std::enable_if<std::is_class<Struct>::value>::type> :
 	typed_mirror<Struct, struct_mirror>,
-	struct_fields<Struct, simple_fields>
+	struct_fields<Struct, Fields>
 {
 	mirror() = default;
 	mirror(const mirror& that) = default;
