@@ -5,42 +5,30 @@
 INTROSPECT_NS_OPEN;
 
 template<typename Struct, typename Fields>
-struct struct_fields : Fields
+struct struct_fields : Fields::template fields<Struct>
 {
 	// specialize this template for your struct
 	// and define STRUCT_FIELD's inside
 };
 
-// interface of Fields::field
+// interface of Fields::fields<Struct>
+// - static const Struct *raw; // usually fake pointer
+// - auto create_field(const char *name, Struct *raw, T *field, ...)
+// - it should be iterable (begin() / end())
 #define STRUCT_FIELD(name, ...) decltype(create_field(#name, raw, &raw->name)) name = create_field(#name, raw, &raw->name, __VA_ARGS__)
 
-struct meta_field {
-	ptrdiff_t offset;
+struct meta_field
+{
+	const ptrdiff_t offset;
 };
 
-template<typename Struct>
-struct meta_fields
+struct base_field : meta_field, virtual base_mirror
 {
-protected:
-
-	static constexpr const Struct *raw = nullptr; // fake raw pointer
-
-	static meta_field create_field(const char* name, const base_fields* s, const base_field* f, ...)
-	{
-		auto offset = ptrdiff_t(f) - ptrdiff_t(s);
-		return { offset };
-	}
-};
-
-struct base_field : virtual base_mirror
-{
-	base_field(const char *name, size_t offset) :
-		m_name(name), offset(offset)
+	base_field(const char *name, ptrdiff_t offset) :
+		meta_field{ offset }, m_name(name)
 	{
 	}
 	virtual ~base_field() {}
-
-    const size_t offset;
 
     const char *name() const { return m_name; }
 
@@ -59,12 +47,10 @@ struct with_name
 	}
 };
 
-template <typename T>
-struct real_field : base_field, mirror<T>
-{
-	real_field(const char* name, size_t offset) :
-		base_field(name, offset) {}
-};
+//
+// base_fields : base class for Fields::fields
+// provide means for iteration over base_field's
+//
 
 struct base_fields
 {
@@ -126,54 +112,97 @@ protected:
     virtual const char *type() const = 0;
 };
 
+//
+// meta_fields
+// utility template for iteration over base_field's
+// its create_field returns `meta_field` of constant size
+// and hence struct_fields<Struct, meta_fields<Fields>> 
+// can be reinterpret_cast to meta_field[N]
+//
+
+template<typename Fields>
+struct meta_fields
+{
+	using field = meta_field;
+
+	template<typename Struct>
+	struct fields
+	{
+	protected:
+
+		static constexpr const struct_fields<Struct, Fields>* raw = nullptr;
+
+		static meta_field create_field(const char* name, const base_fields* s, const base_field* f, ...)
+		{
+			auto offset = ptrdiff_t(f) - ptrdiff_t(s);
+			return { offset };
+		}
+	};
+
+};
+
+//
+// simple fields template
+// support for typed fields 
+// and some basic field attributes
+//
+
+struct simple_fields
+{
+	template <typename T>
+	struct field : base_field, mirror<T>
+	{
+		field(const char* name, ptrdiff_t offset) :
+			base_field(name, offset) {}
+	};
+
+	template<typename Struct>
+	struct fields : base_fields
+	{
+		void set_fields(Struct& value) {
+			auto base = reinterpret_cast<uint8_t*>(&value);
+			for (auto& field : *this) {
+				field.addr(base + field.offset);
+			}
+		}
+
+		const char* type() const override { return typeid(Struct).name(); }
+
+	protected:
+
+		array_ptr<const meta_field> meta() const override {
+			// describe fields of our derivative:
+			static struct_fields<Struct, meta_fields<simple_fields> > x;
+			return array_cast<const meta_field>(x);
+		}
+
+		static constexpr const Struct* raw = nullptr; // fake raw pointer
+
+		template<typename T, typename... Args>
+		static field<T> create_field(const char* name, const Struct* s, const T* f, Args... args)
+		{
+			field<T> field(name, ptrdiff_t(f) - ptrdiff_t(s));
+			int dummy[]{ 0, (args.apply(field), 0)... };
+			return field;
+		}
+	};
+};
+
 struct struct_mirror : virtual base_mirror
 {
 	virtual base_fields& fields() = 0;
 
 	const base_fields& fields() const {
-		return const_cast<struct_mirror *>(this)->fields();
+		return const_cast<struct_mirror*>(this)->fields();
 	}
 
-    VISIT_IMPL;
-};
-
-template<typename Struct>
-struct real_fields : base_fields
-{
-	void set_fields(Struct& value) {
-        auto base = reinterpret_cast<uint8_t *>(&value);
-        for (auto& field : *this) {
-            field.addr(base + field.offset);
-        }
-	}
-
-    const char *type() const override { return typeid(Struct).name(); }
-
-protected:
-
-	using child_fields = struct_fields<Struct, real_fields<Struct>>;
-
-	array_ptr<const meta_field> meta() const override {
-		// describe fields of our derivative:
-		static struct_fields<Struct, meta_fields<child_fields> > x;
-		return array_cast<const meta_field>(x);
-	}
-
-    static constexpr const Struct *raw = nullptr; // fake raw pointer
-
-	template<typename T, typename... Args>
-	static real_field<T> create_field(const char* name, const Struct* s, const T* f, Args... args)
-	{
-		real_field<T> field(name, ptrdiff_t(f) - ptrdiff_t(s));
-		int dummy[]{ 0, (args.apply(field), 0)... };
-		return field;
-	}
+	VISIT_IMPL;
 };
 
 template<typename Struct>
 struct mirror<Struct, typename std::enable_if<std::is_class<Struct>::value>::type> :
 	typed_mirror<Struct, struct_mirror>,
-	struct_fields<Struct, real_fields<Struct>>
+	struct_fields<Struct, simple_fields>
 {
 	mirror() = default;
 	mirror(const mirror& that) = default;

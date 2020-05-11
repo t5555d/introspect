@@ -46,7 +46,7 @@ struct enum_options<enum_t>
 };
 
 template<typename Fields>
-struct struct_fields<point_t, Fields> : Fields
+struct struct_fields<point_t, Fields> : Fields::template fields<point_t>
 {
     STRUCT_FIELD(x, with_name("X"));
     STRUCT_FIELD(y, with_name("Y"));
@@ -54,7 +54,7 @@ struct struct_fields<point_t, Fields> : Fields
 };
 
 template<typename Fields>
-struct struct_fields<settings_t, Fields> : Fields
+struct struct_fields<settings_t, Fields> : Fields::template fields<settings_t>
 {
 	STRUCT_FIELD(a);
 	STRUCT_FIELD(b);
