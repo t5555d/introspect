@@ -4,12 +4,13 @@
 
 INTROSPECT_NS_OPEN;
 
+// specialize this template for your struct
+// and define STRUCT_FIELD's inside
 template<typename Struct, typename Fields>
-struct struct_fields : Fields::template fields<Struct>
-{
-	// specialize this template for your struct
-	// and define STRUCT_FIELD's inside
-};
+struct struct_fields;
+
+#define STRUCT_FIELDS(name) template<typename Fields> \
+	struct struct_fields<name, Fields> : Fields::template fields<name>
 
 // interface of Fields::fields<Struct>
 // - static const Struct *raw; // usually fake pointer

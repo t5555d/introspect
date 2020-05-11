@@ -66,14 +66,6 @@ protected:
     T *raw = nullptr;
 };
 
-template<typename T, typename Enable>
-struct mirror : typed_mirror<T, base_mirror>
-{
-    mirror() = default;
-    mirror(const mirror& that) = default;
-    explicit mirror(T& raw) : typed_mirror(raw) {}
-};
-
 //
 // arithmetic types
 //
@@ -134,6 +126,7 @@ struct enum_options
 };
 
 #define ENUM_OPTION(name) enum_option __enum__option__##name { #name, name }
+#define ENUM_OPTIONS(name) template<> struct enum_options<name>
 
 struct enum_mirror : int_mirror
 {
