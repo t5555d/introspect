@@ -31,6 +31,19 @@ struct settings_t
 	enum_t  c;
 	int32_t d[3];
     point_t e;
+    double  f;
+};
+
+struct other_settings_t
+{
+    int32_t A;
+    int32_t B;
+    int32_t C;
+    int32_t D[3];
+    int32_t EX;
+    int32_t EY;
+    int32_t EZ;
+    double  F;
 };
 
 void set_defaults(settings_t *set)
@@ -58,6 +71,7 @@ STRUCT_FIELDS(settings_t)
 	STRUCT_FIELD(c);
 	STRUCT_FIELD(d);
     STRUCT_FIELD(e);
+    STRUCT_FIELD(f);
 };
 
 // generic introspective settings
@@ -79,6 +93,7 @@ int main()
     settings.e.x = 35;
     settings.e.y = 40;
     settings.e.z = 45;
+    settings.f = 50.55;
 
     try {
         settings_c set(settings);
@@ -96,6 +111,7 @@ int main()
         std::cout << set.e.name() << ".x = " << set.e.get().x << std::endl;
         std::cout << set.e.name() << ".y = " << set.e.get().y << std::endl;
         std::cout << set.e.name() << ".z = " << set.e.get().z << std::endl;
+        std::cout << set.f.name() << " = " << set.f.get() << std::endl;
 
         std::cout << "Accessing mirrors: " << std::endl;
         std::cout << set.a.name() << " = " << set.a << std::endl;
@@ -111,6 +127,7 @@ int main()
         std::cout << set.e.name() << "." << set.e.x.name() << " = " << set.e.x << std::endl;
         std::cout << set.e.name() << "." << set.e.y.name() << " = " << set.e.y << std::endl;
         std::cout << set.e.name() << "." << set.e.z.name() << " = " << set.e.z << std::endl;
+        std::cout << set.f.name() << " = " << set.f << std::endl;
 
         std::cout << "Print the whole struct: \n" << set;
 
