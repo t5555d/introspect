@@ -16,7 +16,7 @@ struct struct_fields;
 // - static const Struct *raw; // usually fake pointer
 // - auto create_field(const char *name, Struct *raw, T *field, ...)
 // - it should be iterable (begin() / end())
-#define STRUCT_FIELD(name, ...) decltype(create_field(#name, raw, &raw->name)) name = create_field(#name, raw, &raw->name, __VA_ARGS__)
+#define STRUCT_FIELD(name, ...) decltype(create_field(#name, raw, &raw->name, __VA_ARGS__)) name = create_field(#name, raw, &raw->name, __VA_ARGS__)
 
 struct meta_field
 {
@@ -31,21 +31,26 @@ struct base_field : meta_field, virtual base_mirror
 	}
 	virtual ~base_field() {}
 
-    const char *name() const { return m_name; }
+	const char *name() const { return m_name; }
 
 private:
 	friend struct with_name;
-    const char *m_name;
+	const char *m_name;
 };
 
 struct with_name
 {
-	explicit with_name(const char* name) : name(name) {}
-	const char* name;
-
-	void apply(base_field& field) {
-		field.m_name = name;
+public:
+	with_name(const char* name) :
+		m_name(name) {}
+	
+protected:
+	void apply(base_field* field) {
+		field->m_name = m_name;
 	}
+
+private:
+	const char* m_name;
 };
 
 //
@@ -150,11 +155,17 @@ struct meta_fields
 
 struct simple_fields
 {
-	template <typename T>
-	struct field : base_field, mirror<T, typename std::conditional<std::is_class<T>::value, simple_fields, void>::type>
+	template <typename T, typename... Args>
+	struct field : 
+		base_field, 
+		mirror<T, typename std::conditional<std::is_class<T>::value, simple_fields, void>::type>,
+		Args...
 	{
-		field(const char* name, ptrdiff_t offset) :
-			base_field(name, offset) {}
+		field(const char* name, ptrdiff_t offset, Args... args) :
+			base_field(name, offset), Args(args)...
+		{
+			int dummy[]{ 0, (Args::apply(this), 0)... };
+		}
 	};
 
 	template<typename Struct>
@@ -180,11 +191,9 @@ struct simple_fields
 		static constexpr const Struct* raw = nullptr; // fake raw pointer
 
 		template<typename T, typename... Args>
-		static field<T> create_field(const char* name, const Struct* s, const T* f, Args... args)
+		static field<T, Args...> create_field(const char* name, const Struct* s, const T* f, Args... args)
 		{
-			field<T> field(name, ptrdiff_t(f) - ptrdiff_t(s));
-			int dummy[]{ 0, (args.apply(field), 0)... };
-			return field;
+			return field<T, Args...>(name, ptrdiff_t(f) - ptrdiff_t(s), args...);
 		}
 	};
 };
