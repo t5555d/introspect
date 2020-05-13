@@ -182,4 +182,44 @@ inline std::ostream& operator << (std::ostream& str, const base_mirror& value)
     return str;
 }
 
+struct with_min_count
+{
+public:
+    with_min_count(size_t min_count) : m_min_count(min_count) {}
+    size_t get_min_count() const { return m_min_count; }
+    virtual void set_default(size_t from = 0) {};
+
+protected:
+    void apply(void *) {}
+
+private:
+    size_t m_min_count;
+};
+
+template<typename T>
+struct has_def_value : with_min_count
+{
+public:
+    has_def_value(const T& value, size_t min_count) :
+        with_min_count(min_count), m_def_value(value) {}
+    const T& get_def_value() const { return m_def_value; }
+
+    void set_default(size_t from) override {
+        auto* array = dynamic_cast<typed_array<T>*>(this);
+        if (!array) return;
+        T* raw = (T *) array->addr();
+        for (size_t i = from, n = array->count(); i < n; i++)
+            raw[i] = m_def_value;
+    }
+
+private:
+    T m_def_value;
+};
+
+template<typename T>
+has_def_value<T> with_default(const T& default_value, size_t min_count = 1)
+{
+    return { default_value, min_count };
+}
+
 INTROSPECT_NS_CLOSE;

@@ -69,7 +69,7 @@ STRUCT_FIELDS(settings_t)
 	STRUCT_FIELD(a);
 	STRUCT_FIELD(b);
 	STRUCT_FIELD(c);
-	STRUCT_FIELD(d);
+	STRUCT_FIELD(d, with_default(-1));
     STRUCT_FIELD(e);
     STRUCT_FIELD(f);
 };
