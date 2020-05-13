@@ -228,6 +228,9 @@ struct typed_array : array_mirror
 	void * addr() override { return raw; }
     void addr(void *addr) override { raw = reinterpret_cast<T *>(addr); }
 
+    const T& get(size_t i) { return raw[i]; }
+    void set(size_t i, const T& value) { raw[i] = value; }
+
 	variant operator[](size_t i) override { 
         if (i >= len)
             throw bad_idx_error(i, len);
@@ -248,6 +251,9 @@ struct mirror<E[N]> : typed_array<E>
     mirror(const mirror& that) = default;
 	explicit mirror(T& raw) :
 		typed_array(raw, N) {}
+
+    using typed_array<E>::get;
+    using typed_array<E>::set;
 
 	T& get() { return *reinterpret_cast<T *>(raw); }
 	const T& get() const { return *reinterpret_cast<T *>(raw); }

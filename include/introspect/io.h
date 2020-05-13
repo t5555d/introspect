@@ -205,15 +205,19 @@ public:
     const T& get_def_value() const { return m_def_value; }
 
     void set_default(size_t from) override {
-        auto* array = dynamic_cast<typed_array<T>*>(this);
-        if (!array) return;
-        T* raw = (T *) array->addr();
-        for (size_t i = from, n = array->count(); i < n; i++)
-            raw[i] = m_def_value;
+        if (!m_self) return;
+        for (size_t i = from, n = m_self->count(); i < n; i++)
+            m_self->set(i, m_def_value);
+    }
+
+protected:
+    void apply(typed_array<T>* self) {
+        m_self = self;
     }
 
 private:
     T m_def_value;
+    typed_array<T>* m_self = nullptr;
 };
 
 template<typename T>
