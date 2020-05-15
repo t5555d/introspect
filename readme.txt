@@ -17,7 +17,7 @@ base_mirror -> struct_mirror -> mirror<S>
 
 extension points:
 struct_fields<S> - поля структуры
-enum_values<E> - варианты перечисления
+enum_options<E> - варианты перечисления
 
 TODO:
 - ввод: минимальная длина массива и значение по умолчанию

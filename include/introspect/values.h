@@ -3,6 +3,7 @@
 #include "fwd.h"
 #include "errors.h"
 #include <type_traits>
+#include <array>
 #include "utils.h"
 
 INTROSPECT_NS_OPEN;
@@ -60,7 +61,7 @@ struct typed_mirror : Base
 
     T& get() { return *raw; }
     const T& get() const { return *raw; }
-    void set(T& raw) { addr(&raw); }
+    void set(const T& value) { *raw = value; }
 
 protected:
     T *raw = nullptr;
@@ -220,7 +221,7 @@ template<typename T>
 struct typed_array : array_mirror
 {
     typed_array(const typed_array& that) = default;
-    explicit typed_array(T *raw, size_t len) :
+    typed_array(T *raw, size_t len) :
 		raw(raw), len(len) {} 
 
 	size_t count() const override { return len; }
@@ -249,7 +250,9 @@ struct mirror<E[N]> : typed_array<E>
 
     mirror() : typed_array(nullptr, N) {}
     mirror(const mirror& that) = default;
-	explicit mirror(T& raw) :
+    mirror(T* raw, size_t len) :
+        typed_array(raw, len) {}
+    explicit mirror(T& raw) :
 		typed_array(raw, N) {}
 
     using typed_array<E>::get;
@@ -259,7 +262,16 @@ struct mirror<E[N]> : typed_array<E>
 	const T& get() const { return *reinterpret_cast<T *>(raw); }
     const char *type() const override { return typeid(T).name(); }
 
-	void set(T& value) { raw = &value[0]; }
+};
+
+template<typename E, size_t N, typename Fields>
+struct mirror<std::array<E, N>, Fields> : mirror<E[N]>
+{
+    mirror() = default;
+    mirror(const mirror<E[N]>& that) :
+        mirror<E[N]>(that) {}
+    explicit mirror(std::array<E, N>& raw) :
+        mirror<E[N]>(raw.data(), N) {}
 };
 
 static_assert(sizeof(mirror<int>) <= VARIANT_BUFFER_SIZE, "VARIANT_BUFFER_SIZE is insufficient");

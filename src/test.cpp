@@ -24,15 +24,6 @@ struct point_t
     int32_t z;
 };
 
-struct settings_t
-{
-	int32_t a;
-	int64_t b;
-	enum_t  c;
-	int32_t d[3];
-    point_t e;
-    double  f;
-};
 
 struct other_settings_t
 {
@@ -46,15 +37,10 @@ struct other_settings_t
     double  F;
 };
 
-void set_defaults(settings_t *set)
-{
-	memset(set, DEFAULT_VALUE, sizeof(settings_t));
-}
-
 ENUM_OPTIONS(enum_t)
 {
-	ENUM_OPTION(VALUE0);
-	ENUM_OPTION(VALUE1);
+    ENUM_OPTION(VALUE0);
+    ENUM_OPTION(VALUE1);
 };
 
 STRUCT_FIELDS(point_t)
@@ -64,15 +50,26 @@ STRUCT_FIELDS(point_t)
     STRUCT_FIELD(z, with_name("Z"));
 };
 
+
+
+struct settings_t;
+
 STRUCT_FIELDS(settings_t)
 {
-	STRUCT_FIELD(a);
-	STRUCT_FIELD(b);
-	STRUCT_FIELD(c);
-	STRUCT_FIELD(d, with_default(-1));
-    STRUCT_FIELD(e);
-    STRUCT_FIELD(f);
+    STRUCT_FIELD2(a, int, with_default(0));
+    STRUCT_FIELD2(b, int64_t, with_default(0LL));
+    STRUCT_FIELD2(c, enum_t, with_default(VALUE0));
+    STRUCT_FIELD2(d, int[3]); /*with_default(-1)*/
+    STRUCT_FIELD2(e, point_t);
+    STRUCT_FIELD2(f, double, with_default(0.0));
 };
+
+struct settings_t : struct_fields<settings_t, raw_fields> {};
+
+void set_defaults(settings_t* set)
+{
+    memset(set, DEFAULT_VALUE, sizeof(settings_t));
+}
 
 // generic introspective settings
 

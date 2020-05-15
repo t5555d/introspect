@@ -220,10 +220,10 @@ private:
     typed_array<T>* m_self = nullptr;
 };
 
-template<typename T>
-has_def_value<T> with_default(const T& default_value, size_t min_count = 1)
-{
-    return { default_value, min_count };
-}
+//template<typename T>
+//has_def_value<T> with_default(const T& default_value, size_t min_count = 1)
+//{
+//    return { default_value, min_count };
+//}
 
 INTROSPECT_NS_CLOSE;

@@ -16,7 +16,34 @@ struct struct_fields;
 // - static const Struct *raw; // usually fake pointer
 // - auto create_field(const char *name, Struct *raw, T *field, ...)
 // - it should be iterable (begin() / end())
-#define STRUCT_FIELD(name, ...) decltype(create_field(#name, raw, &raw->name, __VA_ARGS__)) name = create_field(#name, raw, &raw->name, __VA_ARGS__)
+
+#define STRUCT_FIELD2(name, type, ...) \
+	decltype(create_field(#name, raw, (const field_type_t<type> *) nullptr, __VA_ARGS__)) \
+	  name = create_field(#name, raw, &raw->name, __VA_ARGS__);
+
+#define STRUCT_FIELD(name, ...) STRUCT_FIELD2(name, decltype(raw->name), __VA_ARGS__)
+
+//
+// field type mapping
+//
+
+// default type mapping
+template<typename T>
+struct field_type
+{
+	using type = T;
+};
+
+// type mapping for array
+template<typename T, size_t N>
+struct field_type<T[N]>
+{
+	using type = std::array<T, N>;
+};
+
+template<typename T>
+using field_type_t = typename field_type<T>::type;
+
 
 struct meta_field
 {
@@ -143,6 +170,9 @@ struct meta_fields
 			auto offset = ptrdiff_t(f) - ptrdiff_t(s);
 			return { offset };
 		}
+
+		// support for STRUCT_FIELD2: should never be called
+		static meta_field create_field(const char* name, const base_fields* raw, const void* field, ...);
 	};
 
 };
@@ -198,6 +228,62 @@ struct simple_fields
 	};
 };
 
+template<typename T>
+struct has_default_value
+{
+public:
+	has_default_value(const T& value) : 
+		m_value(value) {}
+
+	const T& get_default() const { return m_value; }
+
+	void set_default() {
+		if (m_single)
+			m_single->set(m_value);
+		if (m_array)
+			for (size_t i = 0, n = m_array->count(); i < n; i++)
+				m_array->set(i, m_value);
+	}
+
+protected:
+
+	// TODO: support convertible types here
+	void apply(mirror<T>* single) { m_single = single; }
+	void apply(typed_array<T>* array) { m_array = array; }
+
+private:
+	T m_value;
+	mirror<T>* m_single = nullptr;
+	typed_array<T>* m_array = nullptr;
+};
+
+template<typename T>
+has_default_value<T> with_default(const T& value)
+{
+	return { value };
+}
+
+struct raw_fields
+{
+	template<typename Struct>
+	struct fields {
+	protected:
+		static constexpr const Struct* raw = nullptr;
+
+		template<typename T>
+		static T create_field(const char* name, const Struct* str, const T* field, ...)
+		{
+			return T{};
+		}
+
+		template<typename T, typename V>
+		static T create_field(const char* name, const Struct* str, const T* field, const has_default_value<V>& value, ...)
+		{
+			return value.get_default();
+		}
+	};
+};
+
 struct struct_mirror : virtual base_mirror
 {
 	virtual base_fields& fields() = 0;
@@ -209,11 +295,13 @@ struct struct_mirror : virtual base_mirror
 	VISIT_IMPL;
 };
 
-template<typename Struct, typename Fields>
-struct mirror<Struct, Fields, typename std::enable_if<std::is_class<Struct>::value>::type> :
+template<typename Struct, typename Fields, typename Enable>
+struct mirror :
 	typed_mirror<Struct, struct_mirror>,
 	struct_fields<Struct, Fields>
 {
+	static_assert(std::is_class<Struct>::value, "Define partial specialization for your type");
+
 	mirror() = default;
 	mirror(const mirror& that) = default;
 	explicit mirror(Struct& raw) : typed_mirror(raw)
