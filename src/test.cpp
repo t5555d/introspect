@@ -24,19 +24,6 @@ struct point_t
     int32_t z;
 };
 
-
-struct other_settings_t
-{
-    int32_t A;
-    int32_t B;
-    int32_t C;
-    int32_t D[3];
-    int32_t EX;
-    int32_t EY;
-    int32_t EZ;
-    double  F;
-};
-
 ENUM_OPTIONS(enum_t)
 {
     ENUM_OPTION(VALUE0);
@@ -56,12 +43,15 @@ struct settings_t;
 
 STRUCT_FIELDS(settings_t)
 {
-    STRUCT_FIELD2(a, int, with_default(0));
-    STRUCT_FIELD2(b, int64_t, with_default(0LL));
-    STRUCT_FIELD2(c, enum_t, with_default(VALUE0));
-    STRUCT_FIELD2(d, int[3]); /*with_default(-1)*/
-    STRUCT_FIELD2(e, point_t);
-    STRUCT_FIELD2(f, double, with_default(0.0));
+    STRUCT_FIELD2(a, int[3]); /*with_default(-1)*/
+    STRUCT_FIELD2(b, bool, with_default(false));
+    STRUCT_FIELD2(c, char, with_default('\0'));
+    STRUCT_FIELD2(d, double, with_default(0.0));
+    STRUCT_FIELD2(e, enum_t, with_default(VALUE0));
+    STRUCT_FIELD2(f, float, with_default(0.0f));
+    STRUCT_FIELD2(i, int, with_default(0));
+    STRUCT_FIELD2(j, int64_t, with_default(0LL));
+    STRUCT_FIELD2(s, point_t);
 };
 
 struct settings_t : struct_fields<settings_t, raw_fields> {};
@@ -81,50 +71,50 @@ int main()
 
 	set_defaults(&settings);
 
-	settings.a = 5;
-	settings.b = 10;
-	settings.c = VALUE1;
-	settings.d[0] = 20;
-	settings.d[1] = 25;
-	settings.d[2] = 30;
-    settings.e.x = 35;
-    settings.e.y = 40;
-    settings.e.z = 45;
-    settings.f = 50.55;
+    settings.a[0] = 1;
+    settings.a[1] = 2;
+    settings.a[2] = 3;
+    settings.b = true;
+    settings.c = 'x';
+    settings.d = 4.5;
+    settings.e = VALUE1;
+    settings.f = 6.7f;
+    settings.i = 8;
+	settings.j = 9;
+    settings.s.x = 10;
+    settings.s.y = 11;
+    settings.s.z = 12;
 
     try {
         settings_c set(settings);
 
         std::cout << "Accessing raw values: " << std::endl;
         std::cout << set.a.name() << " = " << set.a.get() << std::endl;
+        std::cout << set.a.name() << " = " << "{ " << set.a.get()[0] << ", " << set.a.get()[1] << ", " << set.a.get()[2] << " }" << std::endl;
         std::cout << set.b.name() << " = " << set.b.get() << std::endl;
         std::cout << set.c.name() << " = " << set.c.get() << std::endl;
         std::cout << set.d.name() << " = " << set.d.get() << std::endl;
-        std::cout << set.d.name() << " = "
-            << "{ " << set.d.get()[0]
-            << ", " << set.d.get()[1]
-            << ", " << set.d.get()[2]
-            << " }" << std::endl;
-        std::cout << set.e.name() << ".x = " << set.e.get().x << std::endl;
-        std::cout << set.e.name() << ".y = " << set.e.get().y << std::endl;
-        std::cout << set.e.name() << ".z = " << set.e.get().z << std::endl;
+        std::cout << set.e.name() << " = " << set.e.get() << std::endl;
         std::cout << set.f.name() << " = " << set.f.get() << std::endl;
+        std::cout << set.i.name() << " = " << set.i.get() << std::endl;
+        std::cout << set.j.name() << " = " << set.j.get() << std::endl;
+        std::cout << set.s.name() << ".x = " << set.s.get().x << std::endl;
+        std::cout << set.s.name() << ".y = " << set.s.get().y << std::endl;
+        std::cout << set.s.name() << ".z = " << set.s.get().z << std::endl;
 
         std::cout << "Accessing mirrors: " << std::endl;
         std::cout << set.a.name() << " = " << set.a << std::endl;
+        std::cout << set.a.name() << " = " << "{ " << set.a[0] << ", " << set.a[1] << ", " << set.a[2] << " }" << std::endl;
         std::cout << set.b.name() << " = " << set.b << std::endl;
         std::cout << set.c.name() << " = " << set.c << std::endl;
         std::cout << set.d.name() << " = " << set.d << std::endl;
-        std::cout << set.d.name() << " = "
-            << "{ " << set.d[0]
-            << ", " << set.d[1]
-            << ", " << set.d[2]
-            << " }" << std::endl;
-
-        std::cout << set.e.name() << "." << set.e.x.name() << " = " << set.e.x << std::endl;
-        std::cout << set.e.name() << "." << set.e.y.name() << " = " << set.e.y << std::endl;
-        std::cout << set.e.name() << "." << set.e.z.name() << " = " << set.e.z << std::endl;
+        std::cout << set.e.name() << " = " << set.e << std::endl;
         std::cout << set.f.name() << " = " << set.f << std::endl;
+        std::cout << set.i.name() << " = " << set.i << std::endl;
+        std::cout << set.j.name() << " = " << set.j << std::endl;
+        std::cout << set.s.name() << "." << set.s.x.name() << " = " << set.s.x << std::endl;
+        std::cout << set.s.name() << "." << set.s.y.name() << " = " << set.s.y << std::endl;
+        std::cout << set.s.name() << "." << set.s.z.name() << " = " << set.s.z << std::endl;
 
         std::cout << "Print the whole struct: \n" << set;
 
@@ -138,8 +128,8 @@ int main()
         std::cout << "After parsing: \n" << set;
 
     }
-    catch (const std::exception& e) {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
+    catch (const std::exception& s) {
+        std::cerr << "Exception occurred: " << s.what() << std::endl;
     }
 
 }
