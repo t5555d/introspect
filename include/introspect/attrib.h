@@ -49,40 +49,25 @@ public:
 
 protected:
 
-	template<typename U, typename B>
-	void init(typed_mirror<U, B>* field)
-	{
-		m_field = field;
-		m_apply = &default_value::apply_single<U, B>;
-	}
-
 	template<typename U>
-	void init(typed_array<U>* field)
+	void init(mirror<U>* field)
 	{
 		m_field = field;
-		m_apply = &default_value::apply_array<U>;
+		m_apply = &default_value::apply<U>;
 	}
 
 private:
 
-	template<typename U, typename B>
-	void apply_single()
-	{
-		static_cast<typed_mirror<U, B>*>(m_field)->set(m_value);
-	}
-
 	template<typename U>
-	void apply_array()
+	void apply()
 	{
-		auto array = static_cast<typed_array<U>*>(m_field);
-		for (size_t i = 0, n = array->count(); i < n; i++)
-			array->set(i, m_value);
+		static_cast<mirror<U>*>(m_field)->set(m_value);
 	}
 
 	using apply_t = void (default_value::*)();
 
-	T		m_value;
-	void* m_field = nullptr;
+	const T	m_value;
+	void*	m_field = nullptr;
 	apply_t m_apply = nullptr;
 };
 
@@ -91,6 +76,68 @@ default_value<T> with_default(const T& value)
 {
 	return { value };
 }
+
+//
+// with_filler attribute
+//
+
+struct has_filler : has_default_value
+{
+	virtual void fill(size_t i) = 0;
+	void fill(size_t i, size_t j) {
+		while (i < j) fill(i++);
+	}
+};
+
+template<typename T>
+struct filler : has_filler
+{
+	filler(const T& value) : 
+		m_value(value) {}
+
+	void fill(size_t i) override
+	{
+		if (m_apply && m_array)
+			(this->*m_apply)(i);
+	}
+
+	void set_default() override
+	{
+		if (m_apply && m_array) {
+			for (size_t i = 0, n = m_array->count(); i < n; i++)
+				(this->*m_apply)(i);
+		}
+	}
+
+protected:
+	template<typename U>
+	void init(typed_array<U>* field)
+	{
+		m_array = field;
+		m_apply = &filler::apply<U>;
+	}
+
+private:
+
+	template<typename U>
+	void apply(size_t i)
+	{
+		static_cast<typed_array<U>*>(m_array)->set(i, m_value);
+	}
+
+	using apply_t = void (filler::*)(size_t i);
+
+	const T			m_value;
+	array_mirror*   m_array = nullptr;
+	apply_t			m_apply = nullptr;
+};
+
+template<typename T>
+filler<T> with_filler(const T& value)
+{
+	return { value };
+}
+
 
 //
 // with_min_count attribute
@@ -102,12 +149,14 @@ public:
 	explicit with_min_count(size_t min_count) : m_min_count(min_count) {}
 	size_t get_min_count() const { return m_min_count; }
 
+	has_filler* get_filler() { return m_filler; }
+
 protected:
-	template<typename T>
-	void init(typed_array<T>*) {}
+	void init(has_filler* filler) { m_filler = filler; }
 
 private:
 	size_t m_min_count;
+	has_filler* m_filler = nullptr;
 };
 
 INTROSPECT_NS_CLOSE;

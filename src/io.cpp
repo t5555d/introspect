@@ -207,12 +207,6 @@ void parse_visitor::visit(array_mirror& value)
     size_t max_count = value.count();
     size_t min_count = limit ? limit->get_min_count() : max_count;
 
-    if (min_count < max_count) {
-        auto* def_value = dynamic_cast<has_default_value*>(&value);
-        if (def_value)
-            def_value->set_default();
-    }
-
     value[0].visit(*this);
 
     size_t count = 1;
@@ -230,6 +224,9 @@ void parse_visitor::visit(array_mirror& value)
 
     if (count < min_count)
         throw low_count_error(count, min_count);
+    
+    if (count < max_count)
+        limit->get_filler()->fill(count, max_count);
 }
 
 void parse_visitor::visit(struct_mirror& value)

@@ -44,7 +44,7 @@ struct settings_t;
 
 STRUCT_FIELDS(settings_t)
 {
-    STRUCT_FIELD2(a, int[3], with_default(-1), with_min_count(1));
+    STRUCT_FIELD2(a, int[3], with_filler(-1), with_min_count(1));
     STRUCT_FIELD2(b, bool, with_default(0));
     STRUCT_FIELD2(c, char, with_default(0));
     STRUCT_FIELD2(d, double, with_default(0));
