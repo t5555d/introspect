@@ -1,5 +1,6 @@
 #include "introspect/io.h"
 #include "introspect/fields.h"
+#include "introspect/attrib.h"
 #include "introspect/errors.h"
 #include <string>
 

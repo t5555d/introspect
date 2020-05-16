@@ -3,6 +3,7 @@
 #include <utility>
 #include <stdint.h>
 #include "introspect/fields.h"
+#include "introspect/attrib.h"
 #include "introspect/io.h"
 
 using namespace introspect;

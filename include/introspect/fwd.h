@@ -24,6 +24,13 @@ struct const_visitor;
 struct base_field;
 struct base_fields;
 
-struct enum_value;
+struct enum_option;
+
+// attributes:
+struct with_name;
+struct with_min_count;
+struct has_default_value;
+template<typename T>
+struct default_value;
 
 INTROSPECT_NS_CLOSE;

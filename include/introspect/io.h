@@ -182,18 +182,4 @@ inline std::ostream& operator << (std::ostream& str, const base_mirror& value)
     return str;
 }
 
-struct with_min_count
-{
-public:
-    explicit with_min_count(size_t min_count) : m_min_count(min_count) {}
-    size_t get_min_count() const { return m_min_count; }
-
-protected:
-    template<typename T>
-    void init(typed_array<T>*) {}
-
-private:
-    size_t m_min_count;
-};
-
 INTROSPECT_NS_CLOSE;
