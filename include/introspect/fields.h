@@ -72,7 +72,7 @@ public:
 		m_name(name) {}
 	
 protected:
-	void apply(base_field* field) {
+	void init(base_field* field) {
 		field->m_name = m_name;
 	}
 
@@ -194,7 +194,7 @@ struct simple_fields
 		field(const char* name, ptrdiff_t offset, Args... args) :
 			base_field(name, offset), Args(args)...
 		{
-			int dummy[]{ 0, (Args::apply(this), 0)... };
+			int dummy[]{ 0, (Args::init(this), 0)... };
 		}
 	};
 
@@ -228,37 +228,67 @@ struct simple_fields
 	};
 };
 
-template<typename T>
 struct has_default_value
 {
+	virtual void set_default() = 0;
+};
+
+template<typename T>
+struct default_value : has_default_value
+{
 public:
-	has_default_value(const T& value) : 
+	default_value(const T& value) :
 		m_value(value) {}
 
 	const T& get_default() const { return m_value; }
 
-	void set_default() {
-		if (m_single)
-			m_single->set(m_value);
-		if (m_array)
-			for (size_t i = 0, n = m_array->count(); i < n; i++)
-				m_array->set(i, m_value);
+	void set_default() override
+	{
+		if (m_apply && m_field) 
+			(this->*m_apply)();
 	}
 
 protected:
 
-	// TODO: support convertible types here
-	void apply(mirror<T>* single) { m_single = single; }
-	void apply(typed_array<T>* array) { m_array = array; }
+	template<typename U, typename B>
+	void init(typed_mirror<U, B>* field)
+	{
+		m_field = field;
+		m_apply = &default_value::apply_single<U, B>;
+	}
+
+	template<typename U>
+	void init(typed_array<U>* field)
+	{
+		m_field = field;
+		m_apply = &default_value::apply_array<U>;
+	}
 
 private:
-	T m_value;
-	mirror<T>* m_single = nullptr;
-	typed_array<T>* m_array = nullptr;
+
+	template<typename U, typename B>
+	void apply_single()
+	{
+		static_cast<typed_mirror<U, B>*>(m_field)->set(m_value);
+	}
+
+	template<typename U>
+	void apply_array()
+	{
+		auto array = static_cast<typed_array<U>*>(m_field);
+		for (size_t i = 0, n = array->count(); i < n; i++)
+			array->set(i, m_value);
+	}
+
+	using apply_t = void (default_value::*)();
+
+	T		m_value;
+	void *	m_field = nullptr;
+	apply_t m_apply = nullptr;
 };
 
 template<typename T>
-has_default_value<T> with_default(const T& value)
+default_value<T> with_default(const T& value)
 {
 	return { value };
 }
@@ -276,11 +306,20 @@ struct raw_fields
 			return T{};
 		}
 
-		template<typename T, typename V>
-		static T create_field(const char* name, const Struct* str, const T* field, const has_default_value<V>& value, ...)
+		template<typename T, typename U>
+		static T create_field(const char* name, const Struct* str, const T* field, const default_value<U>& value, ...)
 		{
 			return value.get_default();
 		}
+
+		template<typename T, size_t N, typename U>
+		static std::array<T, N> create_field(const char* name, const Struct* str, const std::array<T, N>* field, const default_value<U>& value, ...)
+		{
+			std::array<T, N> array;
+			array.fill(value.get_default());
+			return array;
+		}
+
 	};
 };
 

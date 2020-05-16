@@ -202,29 +202,33 @@ void parse_visitor::visit(array_mirror& value)
     if (brace) // skip opening brace
         input.get();
 
-    auto* count_constraint = dynamic_cast<with_min_count*>(&value);
+    auto* limit = dynamic_cast<with_min_count*>(&value);
+    size_t max_count = value.count();
+    size_t min_count = limit ? limit->get_min_count() : max_count;
+
+    if (min_count < max_count) {
+        auto* def_value = dynamic_cast<has_default_value*>(&value);
+        if (def_value)
+            def_value->set_default();
+    }
 
     value[0].visit(*this);
 
     size_t count = 1;
-    for (size_t max_count = value.count(); count < max_count; count++) {
+    while (count < max_count) {
         auto delim = input.expect(',', brace ? brace : scanner::EOL);
         if (delim.type != ',') {
             input.unget(delim);
             break;
         }
-        value[count].visit(*this);
+        value[count++].visit(*this);
     }
 
     if (brace) // expect closing brace
         input.expect(brace);
 
-    if (count_constraint) {
-        size_t min_count = count_constraint->get_min_count();
-        if (count < min_count)
-            throw low_count_error(count, min_count);
-        count_constraint->set_default(count);
-    }
+    if (count < min_count)
+        throw low_count_error(count, min_count);
 }
 
 void parse_visitor::visit(struct_mirror& value)

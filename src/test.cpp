@@ -43,14 +43,14 @@ struct settings_t;
 
 STRUCT_FIELDS(settings_t)
 {
-    STRUCT_FIELD2(a, int[3]); /*with_default(-1)*/
-    STRUCT_FIELD2(b, bool, with_default(false));
-    STRUCT_FIELD2(c, char, with_default('\0'));
-    STRUCT_FIELD2(d, double, with_default(0.0));
+    STRUCT_FIELD2(a, int[3], with_default(-1), with_min_count(1));
+    STRUCT_FIELD2(b, bool, with_default(0));
+    STRUCT_FIELD2(c, char, with_default(0));
+    STRUCT_FIELD2(d, double, with_default(0));
     STRUCT_FIELD2(e, enum_t, with_default(VALUE0));
     STRUCT_FIELD2(f, float, with_default(0.0f));
     STRUCT_FIELD2(i, int, with_default(0));
-    STRUCT_FIELD2(j, int64_t, with_default(0LL));
+    STRUCT_FIELD2(j, int64_t, with_default(0));
     STRUCT_FIELD2(s, point_t);
 };
 
