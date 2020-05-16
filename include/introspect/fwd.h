@@ -30,7 +30,9 @@ struct enum_option;
 struct with_name;
 struct with_min_count;
 struct has_default_value;
-template<typename T>
-struct default_value;
+struct has_filler;
+template<typename T> struct default_value;
+template<typename T> struct filler;
+
 
 INTROSPECT_NS_CLOSE;

@@ -95,6 +95,8 @@ struct filler : has_filler
 	filler(const T& value) : 
 		m_value(value) {}
 
+	const T& get_filler() const { return m_value; }
+
 	void fill(size_t i) override
 	{
 		if (m_apply && m_array)

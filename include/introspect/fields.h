@@ -247,10 +247,10 @@ struct raw_fields
 		}
 
 		template<typename T, size_t N, typename U>
-		static std::array<T, N> create_field(const char* name, const Struct* str, const std::array<T, N>* field, const default_value<U>& value, ...)
+		static std::array<T, N> create_field(const char* name, const Struct* str, const std::array<T, N>* field, const filler<U>& value, ...)
 		{
 			std::array<T, N> array;
-			array.fill(value.get_default());
+			array.fill(value.get_filler());
 			return array;
 		}
 
