@@ -264,8 +264,8 @@ struct mirror<E[N]> : typed_array<E>
 
 };
 
-template<typename E, size_t N, typename Fields>
-struct mirror<std::array<E, N>, Fields> : mirror<E[N]>
+template<typename E, size_t N>
+struct mirror<std::array<E, N>> : mirror<E[N]>
 {
     mirror() = default;
     mirror(const mirror<E[N]>& that) :

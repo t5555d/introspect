@@ -162,6 +162,20 @@ struct meta_fields
 
 };
 
+// is_struct helper
+
+template<typename T>
+struct is_struct
+{
+	enum { value = std::is_class<T>::value };
+};
+
+template<typename T, size_t N>
+struct is_struct<std::array<T, N>>
+{
+	enum { value = false };
+};
+
 //
 // simple fields template
 // support for typed fields 
@@ -173,7 +187,7 @@ struct simple_fields
 	template <typename T, typename... Args>
 	struct field : 
 		base_field, 
-		mirror<T, typename std::conditional<std::is_class<T>::value, simple_fields, void>::type>,
+		mirror<T, typename std::conditional<is_struct<T>::value, simple_fields, void>::type>,
 		Args...
 	{
 		field(const char* name, ptrdiff_t offset, Args... args) :
@@ -254,7 +268,7 @@ struct struct_mirror : virtual base_mirror
 	VISIT_IMPL;
 };
 
-template<typename Struct, typename Fields, typename Enable>
+template<typename Struct, typename Fields>
 struct mirror :
 	typed_mirror<Struct, struct_mirror>,
 	struct_fields<Struct, Fields>
