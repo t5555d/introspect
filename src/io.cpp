@@ -234,7 +234,7 @@ void parse_visitor::visit(struct_mirror& value)
     auto name = input.expect(scanner::NAME, scanner::EOL);
     if (name.type == scanner::EOL)
         return;
-    auto& field = value.fields()[name.name];
+    auto& field = value[name.name];
 
     auto *nested_struct = dynamic_cast<struct_mirror *>(&field);
     input.expect(nested_struct ? '.' : '=');

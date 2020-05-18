@@ -66,6 +66,15 @@ void set_defaults(settings_t* set)
 
 using settings_c = mirror<settings_t, simple_fields>;
 
+template<typename Field, typename Fields>
+void list_fields(const Fields& m)
+{
+    std::cout << "Fields of type " << typeid(Field).name() << ":";
+    for (auto& field : m.fields<Field>())
+        std::cout << " " << dynamic_cast<const base_field&>(field).name();
+    std::cout << std::endl;
+}
+
 int main()
 {
 	settings_t settings;
@@ -128,6 +137,12 @@ int main()
             buffer >> set;
         std::cout << "After parsing: \n" << set;
 
+        list_fields<base_field>(set);
+        list_fields<array_mirror>(set);
+        list_fields<int_mirror>(set);
+        list_fields<float_mirror>(set);
+        list_fields<enum_mirror>(set);
+        list_fields<struct_mirror>(set);
     }
     catch (const std::exception& s) {
         std::cerr << "Exception occurred: " << s.what() << std::endl;

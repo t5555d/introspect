@@ -10,7 +10,7 @@ template<typename Struct, typename Fields>
 struct struct_fields;
 
 #define STRUCT_FIELDS(name) template<typename Fields> \
-	struct struct_fields<name, Fields> : Fields::template fields<name>
+	struct struct_fields<name, Fields> : Fields::template base<name>
 
 // interface of Fields::fields<Struct>
 // - static const Struct *raw; // usually fake pointer
@@ -22,6 +22,8 @@ struct struct_fields;
 	  name = create_field(#name, raw, &raw->name, __VA_ARGS__);
 
 #define STRUCT_FIELD(name, ...) STRUCT_FIELD2(name, decltype(raw->name), __VA_ARGS__)
+
+#define FAKE_RAW_PTR ((uintptr_t)0xDEAD0000)
 
 //
 // field type mapping
@@ -45,20 +47,18 @@ template<typename T>
 using field_type_t = typename field_type<T>::type;
 
 
-struct meta_field
-{
-	const ptrdiff_t offset;
-};
-
-struct base_field : meta_field, virtual base_mirror
+struct base_field : virtual base_mirror
 {
 	base_field(const char *name, ptrdiff_t offset) :
-		meta_field{ offset }, m_name(name)
+		offset{ offset }, m_name(name)
 	{
 	}
 	virtual ~base_field() {}
 
 	const char *name() const { return m_name; }
+
+public:
+	const ptrdiff_t offset;
 
 private:
 	friend struct with_name;
@@ -66,100 +66,141 @@ private:
 };
 
 //
-// base_fields : base class for Fields::fields
-// provide means for iteration over base_field's
+// field_offsets
+// utility template for iteration over fields
+// its create_field returns `field_offset` of constant size
+// and hence struct_fields<Struct, field_offset<Fields, Field>> 
+// can be reinterpret_cast to meta_field[N]
 //
 
-struct base_fields
+struct field_offset
 {
-	base_field& at(const char *name);
+	ptrdiff_t value;
+	static const ptrdiff_t INVALID_VALUE = std::numeric_limits<ptrdiff_t>::min();
+};
 
-	const base_field& at(const char *name) const {
-		return const_cast<base_fields *>(this)->at(name);
+template<typename Fields, typename Field>
+struct field_offsets
+{
+	template<typename Struct>
+	struct base
+	{
+	protected:
+		using base_t = typename Fields::template base<Struct>;
+
+		static constexpr auto raw = (const struct_fields<Struct, Fields>*)FAKE_RAW_PTR;
+
+		static field_offset create_field(const char* name, const base_t* b, const Field* f, ...)
+		{
+			auto offset = ptrdiff_t(f) - ptrdiff_t(b);
+			return { offset };
+		}
+
+		// fallback for fields, that don't match Field
+		static field_offset create_field(const char* name, ...)
+		{
+			return { field_offset::INVALID_VALUE };
+		}
+	};
+};
+
+//
+// iterable field offsets:
+//
+
+template<typename Struct, typename Fields, typename Field>
+struct field_offset_set
+{
+	field_offset_set() {
+
+		// filter and count offsets:
+		auto array = reinterpret_cast<field_offset*>(&m_offsets);
+		constexpr size_t max_size = sizeof(m_offsets) / sizeof(field_offset);
+		m_size = 0;
+		for (size_t i = 0; i < max_size; i++) {
+			if (array[i].value != field_offset::INVALID_VALUE) {
+				if (m_size < i)
+					array[m_size] = array[i];
+				m_size++;
+			}
+		}
 	}
 
-	base_field& operator[](const char *name) { return at(name); }
-	const base_field& operator[](const char *name) const { return at(name); }
+	const field_offset* begin() const {
+		return reinterpret_cast<const field_offset*>(&m_offsets);
+	}
 
-	template<typename Fields, typename Field>
-	struct basic_iterator
+	const field_offset* end() const {
+		return begin() + m_size;
+	}
+
+	size_t size() const { return m_size; }
+
+private:
+	struct_fields<Struct, field_offsets<Fields, Field>> m_offsets;
+	size_t m_size;
+};
+
+//
+// field_set : helper class for iteration over fields
+//
+
+template<typename Field>
+struct field_set
+{
+	struct iterator
 	{
 		typedef Field value_type;
 		typedef Field* pointer;
 		typedef Field& reference;
 
-		basic_iterator& operator++() {
-			pfield++;
+		iterator& operator++() {
+			m_offset++;
 			return *this;
 		}
 
-		basic_iterator& operator--() {
-			pfield--;
+		iterator& operator--() {
+			m_offset--;
 			return *this;
 		}
 
-		basic_iterator operator++(int) { return{ fields, pfield + 1 }; }
-		basic_iterator operator--(int) { return{ fields, pfield - 1 }; }
+		iterator operator++(int) { return{ m_base, m_offset + 1 }; }
+		iterator operator--(int) { return{ m_base, m_offset - 1 }; }
 
+		pointer operator->() const { return reinterpret_cast<pointer>(m_base + m_offset->value); }
 		reference operator*() const { return *operator->(); }
-		pointer operator->() const { return reinterpret_cast<pointer>(ptrdiff_t(fields) + pfield->offset); }
 
-		bool operator==(const basic_iterator& that) const { return fields == that.fields && pfield == that.pfield; }
-		bool operator!=(const basic_iterator& that) const { return !(*this == that); }
+		bool operator==(const iterator& that) const { return m_base == that.m_base && m_offset == that.m_offset; }
+		bool operator!=(const iterator& that) const { return !(*this == that); }
 
 	private:
-		friend struct base_fields;
+		friend struct field_set;
 
-		basic_iterator(Fields *fields, const meta_field *pfield) :
-			fields(fields), pfield(pfield) {}
+		iterator(ptrdiff_t m_base, const field_offset* m_offset) :
+			m_base(m_base), m_offset(m_offset) {}
 
-		Fields *fields;
-		const meta_field *pfield;
+		ptrdiff_t m_base;
+		const field_offset* m_offset;
 	};
 
-	using iterator = basic_iterator<base_fields, base_field>;
-	using const_iterator = basic_iterator<const base_fields, const base_field>;
+	iterator begin() { return{ m_base, m_beg }; }
+	iterator end() { return{ m_base, m_end }; }
 
-	iterator begin() { return{ this, meta().begin() }; }
-	iterator end() { return{ this, meta().end() }; }
-	const_iterator begin() const { return{ this, meta().begin() }; }
-	const_iterator end() const { return{ this, meta().end() }; }
+	field_set(ptrdiff_t base, const field_offset* beg, const field_offset* end) :
+		m_base(base), m_beg(beg), m_end(end) {}
 
-protected:
-	virtual array_ptr<const meta_field> meta() const = 0;
-    virtual const char *type() const = 0;
-};
+	template<typename Struct, typename Fields>
+	field_set(typename Fields::template base<Struct>* base, const field_offset_set<Struct, Fields, Field>& offsets):
+		field_set(ptrdiff_t(base), offsets.begin(), offsets.end()) {}
 
-//
-// meta_fields
-// utility template for iteration over base_field's
-// its create_field returns `meta_field` of constant size
-// and hence struct_fields<Struct, meta_fields<Fields>> 
-// can be reinterpret_cast to meta_field[N]
-//
+	operator field_set<const Field>() {
+		return { m_base, m_beg, m_end };
+	}
 
-template<typename Fields>
-struct meta_fields
-{
-	using field = meta_field;
-
-	template<typename Struct>
-	struct fields
-	{
-	protected:
-
-		static constexpr const struct_fields<Struct, Fields>* raw = nullptr;
-
-		static meta_field create_field(const char* name, const base_fields* s, const base_field* f, ...)
-		{
-			auto offset = ptrdiff_t(f) - ptrdiff_t(s);
-			return { offset };
-		}
-
-		// support for STRUCT_FIELD2: should never be called
-		static meta_field create_field(const char* name, const base_fields* raw, const void* field, ...);
-	};
-
+private:
+	ptrdiff_t m_base;
+	const field_offset* m_beg;
+	const field_offset* m_end;
 };
 
 // is_struct helper
@@ -186,7 +227,7 @@ struct simple_fields
 {
 	template <typename T, typename... Args>
 	struct field : 
-		base_field, 
+		base_field,
 		mirror<T, typename std::conditional<is_struct<T>::value, simple_fields, void>::type>,
 		Args...
 	{
@@ -198,26 +239,30 @@ struct simple_fields
 	};
 
 	template<typename Struct>
-	struct fields : base_fields
+	struct base
 	{
 		void set_fields(Struct& value) {
-			auto base = reinterpret_cast<uint8_t*>(&value);
-			for (auto& field : *this) {
-				field.addr(base + field.offset);
+			auto m_base = reinterpret_cast<uint8_t*>(&value);
+			for (auto& field : fields<base_field>()) {
+				field.addr(m_base + field.offset);
 			}
 		}
 
-		const char* type() const override { return typeid(Struct).name(); }
-
-	protected:
-
-		array_ptr<const meta_field> meta() const override {
-			// describe fields of our derivative:
-			static struct_fields<Struct, meta_fields<simple_fields> > x;
-			return array_cast<const meta_field>(x);
+		template<typename Field>
+		field_set<Field> fields()
+		{
+			static field_offset_set<Struct, simple_fields, Field> offsets;
+			return field_set<Field>(this, offsets);
 		}
 
-		static constexpr const Struct* raw = nullptr; // fake raw pointer
+		template<typename Field>
+		field_set<const Field> fields() const
+		{
+			return const_cast<base*>(this)->fields<Field>();
+		}
+
+	protected:
+		static constexpr auto raw = (const Struct*)FAKE_RAW_PTR;
 
 		template<typename T, typename... Args>
 		static field<T, Args...> create_field(const char* name, const Struct* s, const T* f, Args... args)
@@ -230,9 +275,9 @@ struct simple_fields
 struct raw_fields
 {
 	template<typename Struct>
-	struct fields {
+	struct base {
 	protected:
-		static constexpr const Struct* raw = nullptr;
+		static constexpr auto raw = (const Struct*)FAKE_RAW_PTR;
 
 		template<typename T>
 		static T create_field(const char* name, const Struct* str, const T* field, ...)
@@ -259,11 +304,20 @@ struct raw_fields
 
 struct struct_mirror : virtual base_mirror
 {
-	virtual base_fields& fields() = 0;
+	virtual field_set<base_field> fields() = 0;
 
-	const base_fields& fields() const {
+	field_set<const base_field> fields() const {
 		return const_cast<struct_mirror*>(this)->fields();
 	}
+
+	base_field& at(const char* name);
+
+	const base_field& at(const char* name) const {
+		return const_cast<struct_mirror*>(this)->at(name);
+	}
+
+	base_field& operator[](const char* name) { return at(name); }
+	const base_field& operator[](const char* name) const { return at(name); }
 
 	VISIT_IMPL;
 };
@@ -282,7 +336,8 @@ struct mirror :
         set_fields(raw);
     }
 
-	base_fields& fields() override { return *this; }
+	using struct_fields<Struct, Fields>::fields;
+	field_set<base_field> fields() override { return fields<base_field>(); }
 
     void addr(void *addr) override {
         typed_mirror::addr(addr);

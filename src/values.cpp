@@ -48,9 +48,9 @@ variant array_mirror::at(size_t i) {
 	return operator[](i);
 }
 
-base_field& base_fields::at(const char *name)
+base_field& struct_mirror::at(const char *name)
 {
-	for (auto& field : *this) {
+	for (auto& field : fields()) {
 		if (0 == strcmp(field.name(), name))
 			return field;
 	}
