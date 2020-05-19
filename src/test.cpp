@@ -40,7 +40,7 @@ STRUCT_FIELDS(point_t)
 
 struct other_settings_t
 {
-    //int32_t a[3];
+    int32_t a[3];
     int32_t b;
     int32_t c;
     double d;
@@ -48,13 +48,14 @@ struct other_settings_t
     double f;
     int32_t i;
     int64_t j;
+    point_t s;
 };
 
 struct settings_t;
 
 STRUCT_FIELDS(settings_t)
 {
-    STRUCT_FIELD2(a, int[3],    with_filler(-1), with_min_count(1));
+    STRUCT_FIELD2(a, int[3],    with_filler(-1),        maps_to(&other_settings_t::a), with_min_count(1));
     STRUCT_FIELD2(b, bool,      with_default(0),        maps_to(&other_settings_t::b));
     STRUCT_FIELD2(c, char,      with_default(0),        maps_to(&other_settings_t::c));
     STRUCT_FIELD2(d, double,    with_default(0),        maps_to(&other_settings_t::d));
@@ -62,7 +63,7 @@ STRUCT_FIELDS(settings_t)
     STRUCT_FIELD2(f, float,     with_default(0.0f),     maps_to(&other_settings_t::f));
     STRUCT_FIELD2(i, int,       with_default(0),        maps_to(&other_settings_t::i));
     STRUCT_FIELD2(j, int64_t,   with_default(0),        maps_to(&other_settings_t::j));
-    STRUCT_FIELD2(s, point_t);
+    STRUCT_FIELD2(s, point_t,   maps_to(&other_settings_t::s));
 };
 
 struct settings_t : struct_fields<settings_t, raw_fields> {};
