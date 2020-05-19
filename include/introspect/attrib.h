@@ -161,4 +161,76 @@ private:
 	has_filler* m_filler = nullptr;
 };
 
+//
+// maps_to attribute
+//
+
+template<typename Struct>
+struct struct_mapping
+{
+	virtual void load_from(const Struct*) = 0;
+	virtual void save_into(Struct*) const = 0;
+};
+
+template<typename Struct, typename T>
+struct field_mapping : struct_mapping<Struct>
+{
+	using field_ptr = T Struct::*;
+
+	field_mapping(field_ptr field) : 
+		m_that(field) {}
+
+	void load_from(const Struct* base) override
+	{
+		if (m_this && m_load && base)
+			(this->*m_load)(base);
+	}
+
+	void save_into(Struct* base) const override
+	{
+		if (m_this && m_save && base)
+			(this->*m_save)(base);
+	}
+
+protected:
+	template<typename U>
+	void init(mirror<U>* field)
+	{
+		m_this = field;
+		m_load = &field_mapping::load<U>;
+		m_save = &field_mapping::save<U>;
+	}
+
+private:
+	
+	template<typename U>
+	void load(const Struct* base)
+	{
+		auto self = static_cast<mirror<U>*>(m_this);
+		self->set(static_cast<U>(base->*m_that));
+	}
+
+	template<typename U>
+	void save(Struct* base) const
+	{
+		auto self = static_cast<mirror<U>*>(m_this);
+		base->*m_that = static_cast<T>(self->get());
+	}
+
+private:
+	using load_t = void (field_mapping::*)(const Struct*);
+	using save_t = void (field_mapping::*)(Struct*) const;
+
+	field_ptr	m_that = nullptr;
+	void *		m_this = nullptr;
+	load_t		m_load = nullptr;
+	save_t		m_save = nullptr;
+};
+
+template<typename Struct, typename T>
+field_mapping<Struct, T> maps_to(T Struct::* field)
+{
+	return { field };
+}
+
 INTROSPECT_NS_CLOSE;

@@ -343,6 +343,20 @@ struct mirror :
         typed_mirror::addr(addr);
         set_fields(get());
     }
+
+	template<typename From>
+	void load_from(const From* from)
+	{
+		for (auto& mapping : fields<struct_mapping<From>>())
+			mapping.load_from(from);
+	}
+
+	template<typename Into>
+	void save_into(Into* from) const
+	{
+		for (auto& mapping : fields<struct_mapping<Into>>())
+			mapping.save_into(from);
+	}
 };
 
 INTROSPECT_NS_CLOSE;

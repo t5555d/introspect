@@ -38,20 +38,30 @@ STRUCT_FIELDS(point_t)
     STRUCT_FIELD(z, with_name("Z"));
 };
 
-
+struct other_settings_t
+{
+    //int32_t a[3];
+    int32_t b;
+    int32_t c;
+    double d;
+    int32_t e;
+    double f;
+    int32_t i;
+    int64_t j;
+};
 
 struct settings_t;
 
 STRUCT_FIELDS(settings_t)
 {
-    STRUCT_FIELD2(a, int[3], with_filler(-1), with_min_count(1));
-    STRUCT_FIELD2(b, bool, with_default(0));
-    STRUCT_FIELD2(c, char, with_default(0));
-    STRUCT_FIELD2(d, double, with_default(0));
-    STRUCT_FIELD2(e, enum_t, with_default(VALUE0));
-    STRUCT_FIELD2(f, float, with_default(0.0f));
-    STRUCT_FIELD2(i, int, with_default(0));
-    STRUCT_FIELD2(j, int64_t, with_default(0));
+    STRUCT_FIELD2(a, int[3],    with_filler(-1), with_min_count(1));
+    STRUCT_FIELD2(b, bool,      with_default(0),        maps_to(&other_settings_t::b));
+    STRUCT_FIELD2(c, char,      with_default(0),        maps_to(&other_settings_t::c));
+    STRUCT_FIELD2(d, double,    with_default(0),        maps_to(&other_settings_t::d));
+    STRUCT_FIELD2(e, enum_t,    with_default(VALUE0),   maps_to(&other_settings_t::e));
+    STRUCT_FIELD2(f, float,     with_default(0.0f),     maps_to(&other_settings_t::f));
+    STRUCT_FIELD2(i, int,       with_default(0),        maps_to(&other_settings_t::i));
+    STRUCT_FIELD2(j, int64_t,   with_default(0),        maps_to(&other_settings_t::j));
     STRUCT_FIELD2(s, point_t);
 };
 
@@ -136,6 +146,16 @@ int main()
         while (!buffer.eof())
             buffer >> set;
         std::cout << "After parsing: \n" << set;
+
+        // save into other settings:
+        other_settings_t other;
+        set.save_into(&other);
+
+        set_defaults(&settings);
+        std::cout << "After set_defaults: \n" << set;
+
+        set.load_from(&other);
+        std::cout << "After loading: \n" << set;
 
         list_fields<base_field>(set);
         list_fields<array_mirror>(set);
