@@ -293,4 +293,59 @@ field_mapping<Struct, T> maps_to(T Struct::* field)
 	return { field };
 }
 
+template<typename Struct>
+struct nested_mapping : struct_mapping<Struct>
+{
+	void load_from(const Struct* base) override
+	{
+		if (m_this && m_load && base)
+			(this->*m_load)(base);
+	}
+
+	void save_into(Struct* base) const override
+	{
+		if (m_this && m_save && base)
+			(this->*m_save)(base);
+	}
+
+protected:
+	template<typename U, typename F>
+	void init(mirror<U, F>* field)
+	{
+		m_this = field;
+		m_load = &nested_mapping::load<U, F>;
+		m_save = &nested_mapping::save<U, F>;
+	}
+
+private:
+
+	template<typename U, typename F>
+	void load(const Struct* base)
+	{
+		auto self = static_cast<mirror<U, F>*>(m_this);
+		self->load_from(base);
+	}
+
+	template<typename U, typename F>
+	void save(Struct* base) const
+	{
+		auto self = static_cast<mirror<U, F>*>(m_this);
+		self->save_into(base);
+	}
+
+private:
+	using load_t = void (nested_mapping::*)(const Struct*);
+	using save_t = void (nested_mapping::*)(Struct*) const;
+
+	void*		m_this = nullptr;
+	load_t		m_load = nullptr;
+	save_t		m_save = nullptr;
+};
+
+template<typename Struct>
+nested_mapping<Struct> maps_to()
+{
+	return {};
+}
+
 INTROSPECT_NS_CLOSE;

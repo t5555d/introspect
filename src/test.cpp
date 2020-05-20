@@ -14,8 +14,8 @@ constexpr int DEFAULT_VALUE = 0xAE;
 
 enum enum_t
 {
-	VALUE0,
-	VALUE1,
+    VALUE0,
+    VALUE1,
 };
 
 struct point_t
@@ -23,19 +23,6 @@ struct point_t
     int32_t x;
     int32_t y;
     int32_t z;
-};
-
-ENUM_OPTIONS(enum_t)
-{
-    ENUM_OPTION(VALUE0);
-    ENUM_OPTION(VALUE1);
-};
-
-STRUCT_FIELDS(point_t)
-{
-    STRUCT_FIELD(x, with_name("X"));
-    STRUCT_FIELD(y, with_name("Y"));
-    STRUCT_FIELD(z, with_name("Z"));
 };
 
 struct other_settings_t
@@ -49,6 +36,20 @@ struct other_settings_t
     int32_t i;
     int64_t j;
     point_t s;
+    int32_t x, y, z;
+};
+
+ENUM_OPTIONS(enum_t)
+{
+    ENUM_OPTION(VALUE0);
+    ENUM_OPTION(VALUE1);
+};
+
+STRUCT_FIELDS(point_t)
+{
+    STRUCT_FIELD(x, with_name("X"), maps_to(&other_settings_t::x));
+    STRUCT_FIELD(y, with_name("Y"), maps_to(&other_settings_t::y));
+    STRUCT_FIELD(z, with_name("Z"), maps_to(&other_settings_t::z));
 };
 
 struct settings_t;
@@ -63,7 +64,8 @@ STRUCT_FIELDS(settings_t)
     STRUCT_FIELD2(f, float,     with_default(0.0f),     maps_to(&other_settings_t::f));
     STRUCT_FIELD2(i, int,       with_default(0),        maps_to(&other_settings_t::i));
     STRUCT_FIELD2(j, int64_t,   with_default(0),        maps_to(&other_settings_t::j));
-    STRUCT_FIELD2(s, point_t,   maps_to(&other_settings_t::s));
+    STRUCT_FIELD2(p, point_t,   maps_to(&other_settings_t::s));
+    STRUCT_FIELD2(s, point_t,   maps_to<other_settings_t>());
 };
 
 struct settings_t : struct_fields<settings_t, raw_fields> {};
@@ -102,9 +104,12 @@ int main()
     settings.f = 6.7f;
     settings.i = 8;
 	settings.j = 9;
-    settings.s.x = 10;
-    settings.s.y = 11;
-    settings.s.z = 12;
+    settings.p.x = 10;
+    settings.p.y = 11;
+    settings.p.z = 12;
+    settings.s.x = 13;
+    settings.s.y = 14;
+    settings.s.z = 15;
 
     try {
         settings_c set(settings);
