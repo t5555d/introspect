@@ -16,12 +16,8 @@ base_mirror -> array_mirror -> mirror<E[N]>
 base_mirror -> struct_mirror -> mirror<S>
 
 extension points:
-struct_fields<S> - поля структуры
+struct_fields<S, F> - поля структуры
 enum_options<E> - варианты перечисления
 
 TODO:
-- юнит-тесты
-
----
-Если сделать все вышеперечисленное, то это будет хорошей заменой config_io.
-- поддержка произвольного интерфейса для поля (или добавление атрибутов)
+- больше юнит-тестов

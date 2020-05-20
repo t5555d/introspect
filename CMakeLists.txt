@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 2.8.7)
+project(introspect)
 
-project(introspect CXX)
+add_subdirectory(src)
 
-include_directories(include)
-
-file(GLOB_RECURSE HEADERS src/*.h include/*.h)
-file(GLOB_RECURSE SOURCES src/*.cpp)
-
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+set(gtest_force_shared_crt ON)
+set(BUILD_GMOCK OFF)
+add_subdirectory(googletest)
+add_subdirectory(test)

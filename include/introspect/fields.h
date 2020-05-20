@@ -352,10 +352,10 @@ struct mirror :
 	}
 
 	template<typename Into>
-	void save_into(Into* from) const
+	void save_into(Into* into) const
 	{
 		for (auto& mapping : fields<struct_mapping<Into>>())
-			mapping.save_into(from);
+			mapping.save_into(into);
 	}
 };
 
