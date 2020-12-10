@@ -195,7 +195,7 @@ template<typename Field, typename Fields>
 void test_fields(const Fields& m, const std::set<const base_field *> expected)
 {
     std::set<const base_field*> actual;
-    for (auto& field : m.fields<Field>())
+    for (const Field& field : m.fields<Field>())
         actual.insert(dynamic_cast<const base_field *>(&field));
 
     EXPECT_EQ(actual, expected);

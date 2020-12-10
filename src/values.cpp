@@ -42,18 +42,18 @@ variant::~variant() {
 }
 
 variant array_mirror::at(size_t i) {
-	size_t len = count();
+    size_t len = count();
     if (i >= len)
         throw bad_idx_error(i, len);
-	return operator[](i);
+    return operator[](i);
 }
 
 base_field& struct_mirror::at(const char *name)
 {
-	for (auto& field : fields()) {
-		if (0 == strcmp(field.name(), name))
-			return field;
-	}
+    for (auto& field : fields()) {
+        if (0 == strcmp(field.name(), name))
+            return field;
+    }
     throw bad_key_error(name, type());
 }
 
